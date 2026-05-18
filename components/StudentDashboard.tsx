@@ -65,10 +65,14 @@ export default function StudentDashboard({ userId }: { userId: number }) {
           <p className="text-[10px] text-slate-500 mt-1">Committed in active claims</p>
         </div>
 
-        <div className="bg-slate-800/80 backdrop-blur-sm p-6 rounded-2xl border border-slate-700 shadow-lg">
-          <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">Global Rank</h3>
-          <p className="text-3xl font-extrabold text-purple-400 mt-2">{metrics?.Global_Elo_Rank || 'Unranked'}</p>
-        </div>
+        {/* SKILL TIER CARD */}
+        <Link href="/dashboard/leaderboards" className="bg-slate-800/80 backdrop-blur-sm p-6 rounded-2xl border border-slate-700 shadow-lg block hover:border-blue-500/50 transition-all group">
+          <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider group-hover:text-slate-300 transition-colors">Skill Tier</h3>
+          <p className={`text-3xl font-extrabold mt-2 transition-colors ${metrics?.Skill_Level === 'Advanced' ? 'text-purple-400 group-hover:text-purple-300' : metrics?.Skill_Level === 'Intermediate' ? 'text-blue-400 group-hover:text-blue-300' : 'text-emerald-400 group-hover:text-emerald-300'}`}>
+            {metrics?.Skill_Level || 'Junior'}
+          </p>
+          <p className="text-[10px] text-slate-500 mt-1 group-hover:underline">View Global Leaderboard &rarr;</p>
+        </Link>
 
         <div className="bg-slate-800/80 backdrop-blur-sm p-6 rounded-2xl border border-slate-700 shadow-lg">
           <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">Wallet Balance</h3>

@@ -4,6 +4,16 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import TopNav from '@/components/TopNav';
 
+// Standardized platform skill taxonomy
+const PLATFORM_SKILLS = [
+  "Angular", "AWS", "Azure", "C#", "Cybersecurity", "Data Analysis", 
+  "Docker", "Flutter", "Go", "Google Cloud (GCP)", "GraphQL", "HTML/CSS", 
+  "Java", "Kotlin", "Kubernetes", "Machine Learning", "MongoDB", "Next.js", 
+  "Node.js", "NoSQL", "PHP", "PostgreSQL", "Python", "React", "React Native", 
+  "Ruby", "Rust", "SQL", "Swift", "Tailwind CSS", "Technical Writing", 
+  "UI/UX Design", "Vue.js"
+];
+
 export default function CreateCoursePage() {
   const router = useRouter();
   const [userId, setUserId] = useState<number | null>(null);
@@ -73,7 +83,6 @@ export default function CreateCoursePage() {
   }
 
   return (
-    // Applied the gradient background here
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col">
       <TopNav role="Instructor" />
       
@@ -104,12 +113,18 @@ export default function CreateCoursePage() {
 
             <div className="flex gap-4">
               <div className="w-1/2">
-                <label className="block text-sm font-medium text-slate-400 mb-1">Skill Verified</label>
-                <input 
-                  type="text" required placeholder="e.g., Python, Negotiation"
+                <label className="block text-sm font-medium text-slate-400 mb-1">Skill Verified by this Course</label>
+                <select 
+                  required 
                   className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                   onChange={e => setCourse({...course, rewardSkill: e.target.value})}
-                />
+                  value={course.rewardSkill}
+                >
+                  <option value="" disabled>Select Core Domain...</option>
+                  {PLATFORM_SKILLS.map(skill => (
+                    <option key={skill} value={skill}>{skill}</option>
+                  ))}
+                </select>
               </div>
               <div className="w-1/2">
                 <label className="block text-sm font-medium text-slate-400 mb-1">RP Reward</label>

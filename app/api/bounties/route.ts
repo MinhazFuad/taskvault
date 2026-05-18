@@ -8,7 +8,6 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
 
     if (corporateUserId) {
-      // Fetch bounties posted by a specific corporate account
       const [rows] = await pool.execute(
         `SELECT B.*, C.Company_Name 
          FROM Bounties B
@@ -21,7 +20,6 @@ export async function GET(request: Request) {
     }
 
     if (status === 'Open') {
-      // Fetch all open bounties for the public student board
       const [rows] = await pool.execute(
         `SELECT B.*, C.Company_Name 
          FROM Bounties B
@@ -43,17 +41,21 @@ export async function POST(request: Request) {
   const connection = await pool.getConnection();
 
   try {
-    const { corporateUserId, title, description, rewardAmount, requiredRp, requiredSkill } = await request.json();
+    const { corporateUserId, title, description, rewardAmount, experienceLevel, requiredSkill, dueDate } = await request.json();
 
     const amount = parseFloat(rewardAmount);
 
-    if (!corporateUserId || !title || !description || isNaN(amount) || amount <= 0 || !requiredSkill) {
+    if (!corporateUserId || !title || !description || isNaN(amount) || amount <= 0 || !requiredSkill || !experienceLevel || !dueDate) {
       return NextResponse.json({ error: 'All fields are required and reward amount must be greater than 0' }, { status: 400 });
     }
 
+    // Map Corporate Experience Levels to your new strict RP thresholds
+    let requiredRp = 0;
+    if (experienceLevel === 'Intermediate') requiredRp = 301;
+    if (experienceLevel === 'Advanced') requiredRp = 801;
+
     await connection.beginTransaction();
 
-    // 1. Lock and check available wallet balance securely against race conditions
     const [walletRows]: any = await connection.execute(
       `SELECT Available_Credits FROM User_Wallets WHERE User_ID = ? FOR UPDATE`,
       [corporateUserId]
@@ -71,7 +73,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Insufficient funds. Please deposit more credits to post this bounty.' }, { status: 400 });
     }
 
-    // 2. Deduct from Available_Credits and lock into Escrow_Balance
     await connection.execute(
       `UPDATE User_Wallets 
        SET Available_Credits = Available_Credits - ?, 
@@ -80,16 +81,15 @@ export async function POST(request: Request) {
       [amount, amount, corporateUserId]
     );
 
-    // 3. Insert the verified Bounty record
-    const [bountyResult]: any = await connection.execute(
-      `INSERT INTO Bounties (Corporate_User_ID, Title, Description, Reward_Amount, Required_RP, Required_Skill, Status) 
-       VALUES (?, ?, ?, ?, ?, ?, 'Open')`,
-      [corporateUserId, title, description, amount, parseInt(requiredRp) || 0, requiredSkill]
+    await connection.execute(
+      `INSERT INTO Bounties (Corporate_User_ID, Title, Description, Reward_Amount, Experience_Level, Required_RP, Required_Skill, Due_Date, Status) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Open')`,
+      [corporateUserId, title, description, amount, experienceLevel, requiredRp, requiredSkill, dueDate]
     );
 
     await connection.commit();
 
-    return NextResponse.json({ success: true, bountyId: bountyResult.insertId }, { status: 201 });
+    return NextResponse.json({ success: true, message: 'Bounty posted and escrow locked' }, { status: 201 });
   } catch (error) {
     await connection.rollback();
     console.error("Bounty Creation Error:", error);

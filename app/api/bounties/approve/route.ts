@@ -13,9 +13,9 @@ export async function POST(request: Request) {
 
     await connection.beginTransaction();
 
-    // 1. Lock and verify the target bounty properties securely
+    // Pulled Created_At, Due_Date, and Submitted_At to calculate speed metrics
     const [bountyRows]: any = await connection.execute(
-      `SELECT Corporate_User_ID, Assigned_Student_ID, Reward_Amount, Status 
+      `SELECT Corporate_User_ID, Assigned_Student_ID, Reward_Amount, Status, Required_RP, Created_At, Due_Date, Submitted_At 
        FROM Bounties 
        WHERE Bounty_ID = ? FOR UPDATE`,
       [bountyId]
@@ -39,9 +39,30 @@ export async function POST(request: Request) {
     }
 
     const rewardAmount = parseFloat(bounty.Reward_Amount);
+    const requiredRp = parseInt(bounty.Required_RP) || 0;
     const studentId = bounty.Assigned_Student_ID;
 
-    // 2. Decrement the locked escrow capital directly from the corporate wallet
+    // ----- BONUS RP CALCULATION ENGINE -----
+    const createdAt = new Date(bounty.Created_At).getTime();
+    const dueDate = new Date(bounty.Due_Date).getTime();
+    // Fallback to Date.now() if they submitted before we added the new DB column
+    const submittedAt = bounty.Submitted_At ? new Date(bounty.Submitted_At).getTime() : Date.now();
+
+    const totalGivenTime = dueDate - createdAt;
+    const timeTaken = submittedAt - createdAt;
+
+    // Base 25% completion bonus
+    let bonusMultiplier = 0.25; 
+    
+    // If completed in less than half the time, add the extra 50% on top (Total 75% Bonus)
+    if (totalGivenTime > 0 && timeTaken <= (totalGivenTime / 2)) {
+      bonusMultiplier = 0.75; 
+    }
+
+    const rpBonus = Math.floor(requiredRp * bonusMultiplier);
+    const totalRpToRefund = requiredRp + rpBonus;
+    // ---------------------------------------
+
     await connection.execute(
       `UPDATE User_Wallets 
        SET Escrow_Balance = Escrow_Balance - ? 
@@ -49,8 +70,6 @@ export async function POST(request: Request) {
       [rewardAmount, corporateUserId]
     );
 
-    // 3. FORTIFIED PAYOUT: Increment available balance for the assigned student.
-    // Using an Upsert (ON DUPLICATE KEY) guarantees legacy/ghost accounts receive their funds perfectly.
     await connection.execute(
       `INSERT INTO User_Wallets (User_ID, Available_Credits, Escrow_Balance) 
        VALUES (?, ?, 0.00) 
@@ -58,7 +77,6 @@ export async function POST(request: Request) {
       [studentId, rewardAmount, rewardAmount]
     );
 
-    // 4. Mark the bounty status as completely fulfilled
     await connection.execute(
       `UPDATE Bounties 
        SET Status = 'Completed' 
@@ -66,24 +84,21 @@ export async function POST(request: Request) {
       [bountyId]
     );
 
-    // 5. Update student performance metrics (Elo recalculation logic)
-    // Increments completed bounties counter and upgrades base Elo status dynamically
+    // Refund staked RP + apply the calculated completion bonuses
     await connection.execute(
       `UPDATE Student_Metrics 
-       SET Total_Bounties_Completed = Total_Bounties_Completed + 1,
-           Global_Elo_Rank = CASE 
-             WHEN Total_Bounties_Completed + 1 >= 10 THEN 'Master (Elo 2000+)'
-             WHEN Total_Bounties_Completed + 1 >= 5 THEN 'Professional (Elo 1600+)'
-             WHEN Total_Bounties_Completed + 1 >= 2 THEN 'Verified (Elo 1200+)'
-             ELSE 'Novice (Elo 1000)'
-           END
+       SET Available_Rep_Points = Available_Rep_Points + ?,
+           Total_Bounties_Completed = Total_Bounties_Completed + 1
        WHERE Student_ID = ?`,
-      [studentId]
+      [totalRpToRefund, studentId]
     );
 
     await connection.commit();
 
-    return NextResponse.json({ success: true, message: 'Deliverables approved! Escrow released to talent.' }, { status: 200 });
+    return NextResponse.json({ 
+      success: true, 
+      message: `Deliverables approved! Escrow released. Talent earned +${rpBonus} Bonus RP for completion speed.` 
+    }, { status: 200 });
 
   } catch (error) {
     await connection.rollback();

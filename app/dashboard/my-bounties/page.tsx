@@ -5,24 +5,21 @@ import { useRouter } from 'next/navigation';
 import TopNav from '@/components/TopNav';
 import Link from 'next/link';
 
-export default function MyBountiesStudioPage() {
+export default function ReviewStudioPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<number | null>(null);
   const [bounties, setBounties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Submission form states
-  const [submissionTexts, setSubmissionTexts] = useState<{ [key: number]: string }>({});
-  const [submittingId, setSubmittingId] = useState<number | null>(null);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
 
-  const fetchClaimedTasks = async () => {
+  const fetchReviewLedger = async () => {
     try {
       setLoading(true);
       const authRes = await fetch('/api/auth/me');
       const authJson = await authRes.json();
 
-      if (!authJson.success || authJson.user.role !== 'Student') {
+      if (!authJson.success || authJson.user.role !== 'Corporate') {
         router.push('/dashboard');
         return;
       }
@@ -30,81 +27,74 @@ export default function MyBountiesStudioPage() {
       const currentUserId = authJson.user.userId;
       setUserId(currentUserId);
 
-      // Using the updated dashboard route to pull their complete list
-      const res = await fetch(`/api/dashboard/student?id=${currentUserId}&t=${Date.now()}`, { cache: 'no-store' });
+      const res = await fetch(`/api/dashboard/corporate?id=${currentUserId}&t=${Date.now()}`, { cache: 'no-store' });
       const json = await res.json();
 
       if (json.success && json.data) {
         setBounties(json.data.bounties || []);
       } else {
-        setError(json.error || 'Failed to pull claimed tasks');
+        setError(json.error || 'Failed to pull review ledger');
       }
     } catch (err: any) {
-      setError('Network error connecting to execution terminal.');
+      setError('Network connection processing exception connecting to audit studio.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchClaimedTasks();
+    fetchReviewLedger();
   }, [router]);
 
-  const handleTextChange = (bountyId: number, text: string) => {
-    setSubmissionTexts({
-      ...submissionTexts,
-      [bountyId]: text
-    });
-  };
-
-  const handleSubmitDeliverables = async (bountyId: number) => {
+  const handleApprovePayout = async (bountyId: number, amount: string) => {
     if (!userId) return;
-    const text = submissionTexts[bountyId];
 
-    if (!text || text.trim() === '') {
-      alert('Please provide a project link, repository URL, or text deliverables before lodging.');
+    if (!confirm(`Authorize deliverable payload sign-off? This executes permanent release of $${parseFloat(amount).toFixed(2)} from locked escrow reserves directly to talent balances.`)) {
       return;
     }
 
-    setSubmittingId(bountyId);
+    setActionLoading(bountyId);
 
     try {
-      const res = await fetch('/api/bounties/submit', {
+      const res = await fetch('/api/bounties/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bountyId,
-          studentId: userId,
-          submissionText: text
-        })
+        body: JSON.stringify({ bountyId, corporateUserId: userId })
       });
 
       const json = await res.json();
 
       if (json.success) {
-        alert('Deliverables successfully lodged! The company has been notified for escrow review.');
-        // Clear text field and reload list
-        setSubmissionTexts({ ...submissionTexts, [bountyId]: '' });
-        await fetchClaimedTasks();
+        alert('Audit Complete! Escrow unlocked safely and scholar performance indices successfully upgraded.');
+        await fetchReviewLedger(); 
       } else {
-        alert(json.error || 'Submission failed.');
+        alert(json.error || 'Escrow transfer transaction failed.');
       }
     } catch (err) {
-      alert('Network error lodging deliverables.');
+      alert('Network transaction release error.');
     } finally {
-      setSubmittingId(null);
+      setActionLoading(null);
     }
   };
 
+  const pendingReviews = bounties.filter(b => b.Status === 'Under_Review');
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col text-white">
-      <TopNav role="Student" />
+      <TopNav role="Corporate" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
-        <div>
-          <Link href="/dashboard" className="text-blue-400 text-sm hover:underline mb-2 inline-block">&larr; Back to Dashboard</Link>
-          <h1 className="text-3xl font-bold tracking-tight">Execution Studio</h1>
-          <p className="text-slate-400 text-sm mt-1">Manage claimed task escrows, lodge deliverables, and track review status.</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <Link href="/dashboard" className="text-blue-400 text-sm hover:underline mb-2 inline-block">&larr; Back to Dashboard</Link>
+            <h1 className="text-3xl font-bold tracking-tight">Review Studio</h1>
+            <p className="text-slate-400 text-sm mt-1">Audit multi-asset submittals lodged by talent candidates and authorize escrow fund release payouts.</p>
+          </div>
+
+          <div className="bg-slate-900/80 border border-slate-700 px-5 py-2.5 rounded-xl text-center">
+            <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">Awaiting Validation</span>
+            <span className="text-xl font-extrabold text-orange-400 block">{pendingReviews.length} Tasks</span>
+          </div>
         </div>
 
         {error && (
@@ -114,120 +104,169 @@ export default function MyBountiesStudioPage() {
         )}
 
         {loading ? (
-          <div className="text-slate-400 py-16 text-center animate-pulse font-medium">Scanning execution terminal...</div>
+          <div className="text-slate-400 py-16 text-center animate-pulse font-medium">Loading execution task reporting pipelines...</div>
         ) : bounties.length === 0 ? (
           <div className="bg-slate-800/40 border border-dashed border-slate-700 rounded-2xl p-12 text-center text-slate-500 space-y-2">
-            <p className="text-lg font-semibold text-slate-400">Your execution queue is completely clear.</p>
-            <p className="text-sm">You do not have any active claimed tasks to submit deliverables for.</p>
-            <Link href="/dashboard/bounties" className="text-blue-400 text-xs font-bold hover:underline block pt-2">
-              Find Bounties to Claim &rarr;
+            <p className="text-lg font-semibold text-slate-400">Auditing queues fully resolved.</p>
+            <p className="text-sm">No tasks have been assigned or submitted for auditing review. Post new tasks to fund candidates.</p>
+            <Link href="/dashboard/manage-bounties" className="text-blue-400 text-xs font-bold hover:underline block pt-2">
+              Deploy Task Escrows &rarr;
             </Link>
           </div>
         ) : (
-          <div className="space-y-6">
-            {bounties.map(bounty => {
-              const isAssigned = bounty.Status === 'Assigned';
-              const isUnderReview = bounty.Status === 'Under_Review';
-              const isCompleted = bounty.Status === 'Completed';
-              const isLoadingThis = submittingId === bounty.Bounty_ID;
+          <div className="space-y-8">
+            
+            {/* UNDER REVIEW LADDER */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-bold text-slate-300 flex items-center gap-2 border-b border-slate-700 pb-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
+                <span>Requires Client Authorization Sign-off ({pendingReviews.length})</span>
+              </h2>
 
-              return (
-                <div key={bounty.Bounty_ID} className="bg-slate-800/80 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 shadow-xl grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  
-                  {/* LEFT: CRITERIA & METADATA */}
-                  <div className="lg:col-span-2 space-y-4 flex flex-col justify-between">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-start gap-4">
-                        <div>
-                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                            {bounty.Company_Name}
-                          </span>
-                          <h2 className="text-xl font-bold tracking-tight text-white">{bounty.Title}</h2>
-                        </div>
+              {pendingReviews.length === 0 ? (
+                <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-6 text-center text-slate-500 text-xs">
+                  No deliverables waiting for immediate operational sign-offs.
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {pendingReviews.map(bounty => {
+                    const isLoadingThis = actionLoading === bounty.Bounty_ID;
 
-                        <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider shrink-0 ${
-                          isAssigned ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                          isUnderReview ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
-                          isCompleted ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                          'bg-slate-800 text-slate-400'
-                        }`}>
-                          {bounty.Status.replace('_', ' ')}
-                        </span>
-                      </div>
+                    return (
+                      <div key={bounty.Bounty_ID} className="bg-slate-800/80 backdrop-blur-sm border border-orange-500/30 rounded-2xl p-6 shadow-xl grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        {/* LEFT: OVERSIGHT REQUIREMENTS */}
+                        <div className="lg:col-span-2 space-y-4 flex flex-col justify-between">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-start gap-4">
+                              <div>
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                                  Talent: <span className="text-slate-300">{bounty.Student_Name || 'Assigned Candidate'}</span>
+                                </span>
+                                <h3 className="text-xl font-bold tracking-tight text-white">{bounty.Title}</h3>
+                              </div>
 
-                      <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line bg-slate-900/50 p-4 rounded-xl border border-slate-800">
-                        {bounty.Description}
-                      </p>
-                    </div>
+                              <span className="bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider shrink-0">
+                                In Processing Review
+                              </span>
+                            </div>
 
-                    <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-700/60 text-xs text-slate-400 font-medium">
-                      <div><span className="text-slate-500">Escrow Value:</span> <span className="font-extrabold text-emerald-400">${parseFloat(bounty.Reward_Amount).toFixed(2)}</span></div>
-                      <div>•</div>
-                      <div><span className="text-slate-500">RP Locked:</span> <span className="font-bold text-blue-400">{bounty.Required_RP} RP</span></div>
-                      <div>•</div>
-                      <div><span className="text-slate-500">Skill Domain:</span> {bounty.Required_Skill}</div>
-                      <div>•</div>
-                      <div><span className="text-slate-500">Claimed:</span> {new Date(bounty.Created_At).toLocaleDateString()}</div>
-                    </div>
-                  </div>
+                            <div className="space-y-2">
+                              <span className="text-xs text-slate-500 font-medium block">Expectation Guide:</span>
+                              <p className="text-slate-400 text-xs leading-relaxed whitespace-pre-line bg-slate-900/40 p-3 rounded-lg border border-slate-800 max-h-[80px] overflow-y-auto">
+                                {bounty.Description}
+                              </p>
+                            </div>
+                          </div>
 
-                  {/* RIGHT: SUBMISSION TERMINAL */}
-                  <div className="lg:col-span-1 bg-slate-900/80 border border-slate-700 rounded-xl p-5 flex flex-col justify-between space-y-4">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider border-b border-slate-800 pb-2 mb-3">
-                        Deliverables Workspace
-                      </h3>
-
-                      {isAssigned ? (
-                        <div className="space-y-3">
-                          <label className="block text-xs text-slate-400 font-medium">Lodge Repository Link / Proof of Work:</label>
-                          <textarea 
-                            rows={5} placeholder="https://github.com/...&#10;&#10;Explain deliverables lodged above..."
-                            className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white text-xs focus:outline-none focus:border-blue-500 resize-none font-mono"
-                            value={submissionTexts[bounty.Bounty_ID] || ''}
-                            onChange={(e) => handleTextChange(bounty.Bounty_ID, e.target.value)}
-                            disabled={isLoadingThis}
-                          />
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <span className="block text-xs text-slate-500 font-medium">Lodged Submission Text:</span>
-                          <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs text-slate-300 font-mono overflow-x-auto whitespace-pre-wrap max-h-[120px]">
-                            {bounty.Submission_Text || '[No deliverables lodged]'}
+                          {/* NEW METADATA RENDERING (Tier + Due Date) */}
+                          <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-slate-700/60 text-xs text-slate-400 font-medium">
+                            <div><span className="text-slate-500 font-medium">Escrow Value:</span> <span className="font-extrabold text-emerald-400">${parseFloat(bounty.Reward_Amount).toFixed(2)}</span></div>
+                            <div>•</div>
+                            <div><span className="text-slate-500 font-medium">Tier Verified:</span> <span className="font-bold text-blue-400">{bounty.Experience_Level}</span></div>
+                            <div>•</div>
+                            <div><span className="text-slate-500 font-medium">Due Date:</span> <span className="font-bold text-orange-400">{new Date(bounty.Due_Date).toLocaleDateString()}</span></div>
                           </div>
                         </div>
-                      )}
-                    </div>
 
-                    <div>
-                      {isAssigned && (
-                        <button 
-                          onClick={() => handleSubmitDeliverables(bounty.Bounty_ID)}
-                          disabled={isLoadingThis}
-                          className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-lg text-xs transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
-                        >
-                          {isLoadingThis ? 'Lodging Deliverables...' : 'Lodge & Request Review &rarr;'}
-                        </button>
-                      )}
+                        {/* RIGHT: COMPREHENSIVE MULTI-ASSET INSPECTION WORKSPACE */}
+                        <div className="lg:col-span-1 bg-slate-900/90 border border-slate-700 rounded-xl p-5 flex flex-col justify-between space-y-4">
+                          <div className="space-y-3">
+                            <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider border-b border-slate-800 pb-2">
+                              Lodged Deliverables Asset Analysis
+                            </h4>
 
-                      {isUnderReview && (
-                        <div className="w-full bg-slate-800 border border-orange-500/20 text-orange-400 text-xs font-semibold py-2.5 rounded-lg text-center">
-                          ⏳ Escrow Under Corporate Review
+                            {/* TEXT NOTES SEGMENT */}
+                            <div className="space-y-1">
+                              <span className="block text-[9px] text-slate-500 font-bold uppercase tracking-wider">Lodged Documentation Report:</span>
+                              <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-xs text-slate-300 font-mono overflow-x-auto whitespace-pre-wrap max-h-[75px]">
+                                {bounty.Submission_Text || '[Missing text documentation reporting]'}
+                              </div>
+                            </div>
+
+                            {/* RENDER DOWNLOADABLE SECURE ATTACHMENT */}
+                            <div className="space-y-1 pt-1">
+                              <span className="block text-[9px] text-slate-500 font-bold uppercase tracking-wider">Asset Package Attachment:</span>
+                              {bounty.Submission_File_Path ? (
+                                <a 
+                                  href={bounty.Submission_File_Path}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download={bounty.Submission_File_Name || "deliverable-attachment"}
+                                  className="flex items-center gap-2 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/30 p-2.5 rounded-lg text-xs text-blue-400 hover:text-blue-300 font-mono transition-all truncate block block w-full"
+                                >
+                                  <span className="shrink-0 text-sm">📥</span>
+                                  <span className="truncate font-bold text-left">{bounty.Submission_File_Name || 'Download attachment payload'}</span>
+                                </a>
+                              ) : (
+                                <div className="text-xs text-slate-600 font-mono bg-slate-950 p-2 rounded border border-slate-900 italic">
+                                  [No external filesystem binaries attached]
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 pt-2 border-t border-slate-800">
+                            <button 
+                              onClick={() => handleApprovePayout(bounty.Bounty_ID, bounty.Reward_Amount)}
+                              disabled={isLoadingThis}
+                              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-xs transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                              {isLoadingThis ? (
+                                <span className="animate-pulse">Authorizing Asset Release...</span>
+                              ) : (
+                                <span>✓ Authorize Escrow Sign-off</span>
+                              )}
+                            </button>
+                            <p className="text-[9px] text-slate-500 text-center leading-tight">
+                              Authorizing releases escrow reserves permanently into mapped talent operational accounts.
+                            </p>
+                          </div>
                         </div>
-                      )}
 
-                      {isCompleted && (
-                        <div className="w-full bg-slate-800 border border-emerald-500/20 text-emerald-400 text-xs font-bold py-2.5 rounded-lg text-center flex items-center justify-center gap-1.5">
-                          <span>✓ Funds Released to Wallet</span>
-                        </div>
-                      )}
-                    </div>
-
-                  </div>
-
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              )}
+            </div>
+
+            {/* ASSIGNED ACTIVE QUEUES */}
+            <div className="space-y-4 pt-6 border-t border-slate-800">
+              <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">
+                Assigned Task Commitments (Talent Candidates Processing)
+              </h2>
+
+              {bounties.filter(b => b.Status === 'Assigned').length === 0 ? (
+                <div className="bg-slate-900/20 border border-slate-800/50 rounded-xl p-6 text-center text-slate-600 text-xs">
+                  No execution workflows mapped without unresolved payload deliveries.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {bounties.filter(b => b.Status === 'Assigned').map(bounty => (
+                    <div key={bounty.Bounty_ID} className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 flex flex-col justify-between gap-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Candidate: <span className="text-slate-400">{bounty.Student_Name || 'Assigned Candidate'}</span>
+                          </span>
+                          <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shrink-0">
+                            Active Scope
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-sm text-white tracking-tight">{bounty.Title}</h3>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs pt-3 border-t border-slate-800 text-slate-500 font-medium">
+                        <div>Escrow Held: <span className="font-extrabold text-emerald-400">${parseFloat(bounty.Reward_Amount).toFixed(2)}</span></div>
+                        <div>RP Category: <span className="text-blue-400">{bounty.Required_Skill}</span></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
         )}
       </main>

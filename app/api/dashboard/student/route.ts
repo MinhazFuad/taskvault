@@ -10,12 +10,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // 1. Fetch base metrics and aggregate locked RP
+    // 1. Fetch base metrics and Tier
     const [userRows]: any = await pool.execute(
       `SELECT 
           U.Full_Name, 
           SM.Available_Rep_Points, 
-          SM.Global_Elo_Rank, 
+          CASE 
+            WHEN SM.Available_Rep_Points >= 801 THEN 'Advanced'
+            WHEN SM.Available_Rep_Points >= 301 THEN 'Intermediate'
+            ELSE 'Junior'
+          END AS Skill_Level,
           W.Available_Credits AS Fiat_Balance,
           (
             SELECT COALESCE(SUM(Required_RP), 0) 
@@ -33,7 +37,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
     }
 
-    // 2. Fetch active bounties assigned to this student
+    // 2. Fetch the specific skills they earned by completing courses
+    const [skillRows]: any = await pool.execute(
+      `SELECT DISTINCT LOWER(TRIM(C.Reward_Skill)) AS Earned_Skill
+       FROM Student_Course_Progress P
+       JOIN Courses C ON P.Course_ID = C.Course_ID
+       WHERE P.Student_ID = ? AND P.Is_Completed = 1`,
+      [studentId]
+    );
+    const earnedSkills = skillRows.map((row: any) => row.Earned_Skill);
+
+    // 3. Fetch active bounties
     const [bountyRows]: any = await pool.execute(
       `SELECT B.*, C.Company_Name 
        FROM Bounties B
@@ -47,6 +61,7 @@ export async function GET(request: Request) {
       success: true, 
       data: {
         ...userRows[0],
+        earnedSkills,
         bounties: bountyRows
       } 
     }, { status: 200 });
