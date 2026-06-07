@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     await connection.beginTransaction();
 
     const [courseResult]: any = await connection.execute(
-      `INSERT INTO Courses (Instructor_ID, Title, Description, Cover_Image, Image_Zoom, Image_X, Image_Y, Total_Modules, Reward_RP, Reward_Skill) 
+      `INSERT INTO Courses (Instructor_ID, Title, Description, Cover_Image, Image_Zoom, Image_X, Image_Y, Total_Modules, Reward_RP, Reward_Skill)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [instructorId, title, description, coverImage || null, imageZoom || 0, imageX || 0, imageY || 0, modules.length, rewardRp, rewardSkill]
     );
@@ -23,16 +23,27 @@ export async function POST(request: Request) {
 
     for (let i = 0; i < modules.length; i++) {
       const mod = modules[i];
-      const videoUrl = mod.videoUrl ? mod.videoUrl.trim() : null;
-      
-      await connection.execute(
-        `INSERT INTO Course_Modules (Course_ID, Module_Order, Title, Content, Video_URL) 
+      const [modResult]: any = await connection.execute(
+        `INSERT INTO Course_Modules (Course_ID, Module_Order, Title, Content, Video_URL)
          VALUES (?, ?, ?, ?, ?)`,
-        [newCourseId, i + 1, mod.title, mod.content, videoUrl]
+        [newCourseId, i + 1, mod.title, mod.content, mod.videoUrl ? mod.videoUrl.trim() : null]
       );
+
+      const q = mod.quiz;
+      if (q && q.question?.trim() && q.optionA?.trim() && q.optionB?.trim() && q.optionC?.trim() && q.optionD?.trim() && q.correctOption) {
+        await connection.execute(
+          `INSERT INTO course_quizzes (Module_ID, Question, Option_A, Option_B, Option_C, Option_D, Correct_Option)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [modResult.insertId, q.question.trim(), q.optionA.trim(), q.optionB.trim(), q.optionC.trim(), q.optionD.trim(), q.correctOption]
+        );
+      }
     }
 
-    await connection.execute(`UPDATE Instructor_Profiles SET Total_Published = Total_Published + 1 WHERE Instructor_ID = ?`, [instructorId]);
+    await connection.execute(
+      `UPDATE Instructor_Profiles SET Total_Published = Total_Published + 1 WHERE Instructor_ID = ?`,
+      [instructorId]
+    );
+
     await connection.commit();
     return NextResponse.json({ success: true, courseId: newCourseId }, { status: 201 });
 
