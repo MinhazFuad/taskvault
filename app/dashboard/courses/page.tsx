@@ -56,7 +56,7 @@ export default function CoursesCatalog() {
   const [error, setError]           = useState<string | null>(null);
   const [search, setSearch]         = useState('');
   const [sort, setSort]             = useState<SortKey>('newest');
-  const [filter, setFilter]         = useState<FilterKey>('all');
+  const [filter, setFilter]         = useState<FilterKey>('available');
 
   useEffect(() => {
     async function load() {
