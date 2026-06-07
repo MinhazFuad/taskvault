@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 
     const user = rows[0];
 
-    // 2. Verify the password using bcrypt
+    // 2. Verify the password using native bcrypt
     const isPasswordValid = await bcrypt.compare(password, user.Password_Hash);
 
     if (!isPasswordValid) {
@@ -32,11 +32,12 @@ export async function POST(request: Request) {
 
     // 3. Create the JWT Token
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    
     const token = await new SignJWT({ 
-        userId: user.User_ID, 
-        role: user.Role,
-        name: user.Full_Name 
-      })
+         userId: user.User_ID, 
+         role: user.Role,
+         name: user.Full_Name 
+       })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('24h') // Token expires in 24 hours

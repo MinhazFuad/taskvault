@@ -1,15 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import TopNav from '@/components/TopNav';
 
 const PLATFORM_SKILLS = ["Angular", "AWS", "Azure", "C#", "Cybersecurity", "Data Analysis", "Docker", "Flutter", "Go", "Google Cloud (GCP)", "GraphQL", "HTML/CSS", "Java", "Kotlin", "Kubernetes", "Machine Learning", "MongoDB", "Next.js", "Node.js", "NoSQL", "PHP", "PostgreSQL", "Python", "React", "React Native", "Ruby", "Rust", "SQL", "Swift", "Tailwind CSS", "Technical Writing", "UI/UX Design", "Vue.js"];
 
-export default function CreateCoursePage() {
+export default function EditCoursePage() {
   const router = useRouter();
+  const params = useParams();
+  const courseId = params.id;
+
   const [userId, setUserId] = useState<number | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [loadingInitial, setLoadingInitial] = useState(true);
   const [isPublishing, setIsPublishing] = useState(false);
   
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -19,14 +22,45 @@ export default function CreateCoursePage() {
   const [modules, setModules] = useState([{ title: '', content: '', videoUrl: '' }]);
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.user.role === 'Instructor') setUserId(data.user.userId);
-        else router.push('/dashboard'); 
-      })
-      .finally(() => setAuthLoading(false));
-  }, [router]);
+    const initializeEditing = async () => {
+      try {
+        const authRes = await fetch('/api/auth/me');
+        const authData = await authRes.json();
+        
+        if (!authData.success || authData.user.role !== 'Instructor') return router.push('/dashboard');
+        setUserId(authData.user.userId);
+
+        const courseRes = await fetch(`/api/courses/${courseId}?t=${Date.now()}`);
+        const courseData = await courseRes.json();
+
+        if (courseData.success) {
+          if (courseData.course.Instructor_ID !== authData.user.userId) return router.push('/dashboard');
+
+          setCourse({
+            title: courseData.course.Title || '',
+            description: courseData.course.Description || '',
+            coverImage: courseData.course.Cover_Image || '',
+            imageZoom: courseData.course.Image_Zoom || 0,
+            imageX: courseData.course.Image_X || 0,
+            imageY: courseData.course.Image_Y || 0,
+            rewardRp: courseData.course.Reward_RP || 50,
+            rewardSkill: courseData.course.Reward_Skill || ''
+          });
+
+          if (courseData.modules && courseData.modules.length > 0) {
+            setModules(courseData.modules.map((m: any) => ({ title: m.Title || '', content: m.Content || '', videoUrl: m.Video_URL || '' })));
+          }
+        } else {
+          router.push('/dashboard');
+        }
+      } catch (err) {
+        router.push('/dashboard');
+      } finally {
+        setLoadingInitial(false);
+      }
+    };
+    if (courseId) initializeEditing();
+  }, [courseId, router]);
 
   const addModule = () => { setModules([...modules, { title: '', content: '', videoUrl: '' }]); setExpandedModule(modules.length); };
   const removeModule = (indexToRemove: number) => {
@@ -52,11 +86,11 @@ export default function CreateCoursePage() {
   };
   const prevStep = () => { if (currentStep > 1) setCurrentStep((prev) => (prev - 1) as 1 | 2 | 3); };
 
-  const handlePublish = async () => {
+  const handleUpdate = async () => {
     if (!userId) return;
     setIsPublishing(true);
     try {
-      const res = await fetch('/api/courses/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instructorId: userId, ...course, modules }) });
+      const res = await fetch(`/api/courses/${courseId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instructorId: userId, ...course, modules }) });
       const json = await res.json();
       if (json.success) router.push('/dashboard'); 
       else { alert(json.error); setIsPublishing(false); }
@@ -72,21 +106,20 @@ export default function CreateCoursePage() {
     return `scale(${scale}) translate(${course.imageX}%, ${course.imageY}%)`;
   };
 
-  if (authLoading) return <div className="min-h-screen bg-slate-900 text-slate-400 flex items-center justify-center animate-pulse">Initializing Studio Tools...</div>;
+  if (loadingInitial) return <div className="min-h-screen bg-slate-900 text-slate-400 flex items-center justify-center animate-pulse">Loading Course Architecture...</div>;
 
   return (
     <div className="min-h-screen bg-slate-900 font-sans text-white flex flex-col pb-20">
       <TopNav role="Instructor" />
       <main className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-10 flex-1">
-        
         <div className="mb-10">
-          <h1 className="text-3xl font-extrabold tracking-tight mb-8">Course Studio</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight mb-8">Edit Course: #{courseId}</h1>
           <div className="flex items-center justify-between relative">
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-800 -z-10 rounded-full"></div>
             <div className={`absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-blue-500 -z-10 rounded-full transition-all duration-500`} style={{ width: currentStep === 1 ? '0%' : currentStep === 2 ? '50%' : '100%' }}></div>
             {[{ num: 1, label: 'Foundation' }, { num: 2, label: 'Curriculum' }, { num: 3, label: 'Review & Deploy' }].map((step) => (
               <div key={step.num} className="flex flex-col items-center gap-2">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border-4 transition-colors ${currentStep >= step.num ? 'bg-blue-600 border-slate-900 shadow-lg shadow-blue-500/20 text-white' : 'bg-slate-800 border-slate-900 text-slate-500'}`}>{step.num}</div>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border-4 transition-colors ${currentStep >= step.num ? 'bg-blue-600 border-slate-900 shadow-lg text-white' : 'bg-slate-800 border-slate-900 text-slate-500'}`}>{step.num}</div>
                 <span className={`text-xs font-bold uppercase tracking-wider ${currentStep >= step.num ? 'text-blue-400' : 'text-slate-600'}`}>{step.label}</span>
               </div>
             ))}
@@ -98,17 +131,11 @@ export default function CreateCoursePage() {
             <div className="space-y-6 flex-1 animate-in fade-in slide-in-from-right-4 duration-500">
               <h2 className="text-xl font-bold border-b border-slate-700/50 pb-4">Core Metadata</h2>
               <div className="space-y-5">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Course Title *</label>
-                  <input type="text" placeholder="e.g., Enterprise Architecture Patterns" className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" value={course.title} onChange={e => setCourse({...course, title: e.target.value})} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Comprehensive Description *</label>
-                  <textarea rows={4} className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 resize-none" value={course.description} onChange={e => setCourse({...course, description: e.target.value})} />
-                </div>
+                <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Course Title *</label><input type="text" className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" value={course.title} onChange={e => setCourse({...course, title: e.target.value})} /></div>
+                <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Comprehensive Description *</label><textarea rows={4} className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 resize-none" value={course.description} onChange={e => setCourse({...course, description: e.target.value})} /></div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cover Image URL - Optional</label>
-                  <input type="url" placeholder="https://example.com/image.png" className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-blue-400 font-mono text-sm focus:outline-none focus:border-blue-500" value={course.coverImage} onChange={e => setCourse({...course, coverImage: e.target.value})} />
+                  <input type="url" className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-blue-400 font-mono text-sm focus:outline-none focus:border-blue-500" value={course.coverImage} onChange={e => setCourse({...course, coverImage: e.target.value})} />
 
                   {course.coverImage && (
                     <div className="mt-6 bg-slate-900/40 border border-slate-700/50 p-6 rounded-2xl flex flex-col md:flex-row gap-8">
@@ -133,7 +160,7 @@ export default function CreateCoursePage() {
                           <div className="flex justify-between items-center mb-1"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pan Vertical</label><span className="text-xs text-blue-400 font-mono">{course.imageY > 0 ? '+' : ''}{course.imageY}</span></div>
                           <input type="range" min="-50" max="50" step="1" value={course.imageY} onChange={e => setCourse({...course, imageY: parseInt(e.target.value)})} className="accent-emerald-500 w-full cursor-pointer h-2 bg-slate-800 rounded-lg appearance-none" />
                         </div>
-                        <button type="button" onClick={() => setCourse({...course, imageZoom: 0, imageX: 0, imageY: 0})} className="w-full mt-2 text-xs font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 py-2 rounded-lg transition-colors uppercase tracking-widest">Reset Framing</button>
+                        <button type="button" onClick={() => setCourse({...course, imageZoom: 0, imageX: 0, imageY: 0})} className="w-full mt-2 text-xs font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 py-2 rounded-lg uppercase tracking-widest">Reset Framing</button>
                       </div>
                     </div>
                   )}
@@ -189,7 +216,7 @@ export default function CreateCoursePage() {
 
           {currentStep === 3 && (
             <div className="space-y-6 flex-1 animate-in fade-in slide-in-from-right-4 duration-500">
-              <h2 className="text-xl font-bold border-b border-slate-700/50 pb-4">Final Review</h2>
+              <h2 className="text-xl font-bold border-b border-slate-700/50 pb-4">Verify Updates</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-4">
                   <div className="bg-slate-900/50 border border-slate-700 p-5 rounded-xl">
@@ -228,7 +255,7 @@ export default function CreateCoursePage() {
             {currentStep < 3 ? (
               <button onClick={nextStep} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-lg">Continue &rarr;</button>
             ) : (
-              <button onClick={handlePublish} disabled={isPublishing} className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-lg disabled:opacity-50 flex items-center gap-2">{isPublishing ? 'Deploying...' : '🚀 Publish Course'}</button>
+              <button onClick={handleUpdate} disabled={isPublishing} className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-lg disabled:opacity-50 flex items-center gap-2">{isPublishing ? 'Updating Course...' : '💾 Save Course Updates'}</button>
             )}
           </div>
         </div>

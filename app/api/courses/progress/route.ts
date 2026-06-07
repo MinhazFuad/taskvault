@@ -45,8 +45,11 @@ export async function POST(request: Request) {
     // 5. Completion Logic
     let courseCompleted = false;
     if (currentCompleted >= totalModules) {
+      // FIXED: Explicitly set Completed_At to the current exact time
       await connection.execute(
-        `UPDATE Student_Course_Progress SET Is_Completed = TRUE WHERE Student_ID = ? AND Course_ID = ?`,
+        `UPDATE Student_Course_Progress 
+         SET Is_Completed = TRUE, Completed_At = CURRENT_TIMESTAMP 
+         WHERE Student_ID = ? AND Course_ID = ?`,
         [studentId, courseId]
       );
       

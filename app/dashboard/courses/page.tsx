@@ -13,16 +13,7 @@ export default function CoursesCatalog() {
     async function loadPlatform() {
       try {
         const authRes = await fetch('/api/auth/me');
-        const authText = await authRes.text();
-        
-        if (!authText) throw new Error("The /api/auth/me route returned an entirely blank response. Check if the file exists.");
-
-        let authJson;
-        try {
-          authJson = JSON.parse(authText);
-        } catch (e) {
-          throw new Error(`The /api/auth/me route did not return JSON. It returned: ${authText.substring(0, 50)}...`);
-        }
+        const authJson = await authRes.json();
         
         if (!authJson.success) {
           window.location.href = '/login';
@@ -30,28 +21,16 @@ export default function CoursesCatalog() {
         }
 
         const realUserId = authJson.user.userId;
-
         const coursesRes = await fetch(`/api/courses?userId=${realUserId}`);
-        const coursesText = await coursesRes.text();
-        
-        if (!coursesText) throw new Error("The /api/courses route returned an entirely blank response. Check if the file exists.");
-
-        let coursesJson;
-        try {
-          coursesJson = JSON.parse(coursesText);
-        } catch (e) {
-          throw new Error(`The /api/courses route did not return JSON. It returned: ${coursesText.substring(0, 50)}...`);
-        }
+        const coursesJson = await coursesRes.json();
 
         if (coursesJson.success) {
           setCourses(coursesJson.data);
         } else {
           setError(coursesJson.error || "Failed to load courses");
         }
-
       } catch (err: any) {
-        console.error("Platform Load Error:", err);
-        setError(err.message);
+        setError(err.message || "Network Error");
       } finally {
         setLoading(false);
       }
@@ -60,55 +39,96 @@ export default function CoursesCatalog() {
     loadPlatform();
   }, []);
 
+  const getTransformStyle = (course: any) => {
+    const zoom = course.Image_Zoom || 0;
+    const x = course.Image_X || 0;
+    const y = course.Image_Y || 0;
+    if (zoom === 0 && x === 0 && y === 0) return undefined;
+    const scale = 1 + (zoom / 50);
+    return `scale(${scale}) translate(${x}%, ${y}%)`;
+  };
+
   return (
-    // Applied the gradient background here
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col font-sans">
       <TopNav role="Student" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-white">Skill Verification Courses</h1>
-          <p className="text-slate-400">Complete courses to earn Reputation Points (RP) and unlock Bounties.</p>
+          <div>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">Skill Verification Courses</h1>
+            <p className="text-slate-400 text-sm mt-1">Complete courses to earn Reputation Points (RP) and unlock Bounties.</p>
+          </div>
         </div>
 
         {loading ? (
-          <div className="text-slate-400 text-center py-12">Loading catalog...</div>
+          <div className="text-slate-400 text-center py-16 animate-pulse font-medium">Loading catalog...</div>
         ) : error ? (
-          <div className="bg-red-500/10 border border-red-500 rounded-xl p-6 text-red-400 text-center font-semibold">
+          <div className="bg-red-500/10 border border-red-500 rounded-2xl p-6 text-red-400 text-center font-semibold">
             {error}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {courses.map((course) => {
               const progressPercent = Math.min((course.Completed_Modules / course.Total_Modules) * 100, 100);
+              const customTransform = getTransformStyle(course);
               
               return (
                 <Link 
                   href={`/dashboard/courses/${course.Course_ID}`} 
                   key={course.Course_ID}
-                  className="bg-slate-800/80 backdrop-blur-sm border border-slate-700 hover:border-blue-500 rounded-xl p-6 transition-all shadow-lg hover:shadow-blue-500/10 group flex flex-col h-full"
+                  className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 hover:border-blue-500/50 rounded-2xl overflow-hidden transition-all duration-300 shadow-xl hover:shadow-blue-500/20 group flex flex-col h-full"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <h2 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
+                  <div className="h-44 w-full bg-slate-900 overflow-hidden relative border-b border-slate-700/50">
+                    {course.Cover_Image ? (
+                      <img 
+                        src={course.Cover_Image} 
+                        alt={course.Title} 
+                        className={`w-full h-full object-cover transition-transform duration-500 ${!customTransform ? 'group-hover:scale-[1.05]' : ''}`}
+                        style={customTransform ? { transform: customTransform } : undefined}
+                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-tr from-blue-900/40 to-purple-900/40 flex items-center justify-center">
+                        <span className="text-4xl">📚</span>
+                      </div>
+                    )}
+                    
+                    <div className="absolute top-3 right-3">
+                      {course.Is_Completed === 1 ? (
+                        <span className="bg-emerald-500/90 backdrop-blur text-white text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg font-bold shadow-lg">
+                          Completed
+                        </span>
+                      ) : progressPercent > 0 ? (
+                        <span className="bg-blue-500/90 backdrop-blur text-white text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg font-bold shadow-lg">
+                          In Progress
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur text-slate-300 border border-slate-700 text-[10px] px-2 py-1 rounded uppercase tracking-wider font-bold">
+                       {course.Reward_Skill}
+                    </div>
+                  </div>
+
+                  <div className="p-6 flex flex-col flex-grow">
+                    <h2 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-1 mb-2">
                       {course.Title}
                     </h2>
-                    {course.Is_Completed === 1 && (
-                      <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded font-semibold">Done</span>
-                    )}
-                  </div>
-                  
-                  <p className="text-slate-400 text-sm mb-6 flex-grow">{course.Description}</p>
-                  
-                  <div className="mt-auto">
-                    <div className="flex justify-between text-xs text-slate-500 mb-2">
-                      <span>{course.Completed_Modules} / {course.Total_Modules} Modules</span>
-                      <span>+{course.Reward_RP} RP</span>
-                    </div>
-                    <div className="w-full bg-slate-900 rounded-full h-2 border border-slate-700">
-                      <div 
-                        className={`h-2 rounded-full transition-all duration-500 ${course.Is_Completed === 1 ? 'bg-emerald-500' : 'bg-blue-500'}`} 
-                        style={{ width: `${progressPercent}%` }}
-                      ></div>
+                    <p className="text-slate-400 text-sm mb-6 line-clamp-2 leading-relaxed flex-grow">
+                      {course.Description}
+                    </p>
+                    
+                    <div className="mt-auto">
+                      <div className="flex justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        <span>{course.Completed_Modules} / {course.Total_Modules} Modules</span>
+                        <span className="text-blue-400">+{course.Reward_RP} RP</span>
+                      </div>
+                      <div className="w-full bg-slate-900/80 rounded-full h-2.5 border border-slate-700/50 overflow-hidden shadow-inner">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-1000 ease-out ${course.Is_Completed === 1 ? 'bg-emerald-500' : 'bg-gradient-to-r from-blue-600 to-blue-400'}`} 
+                          style={{ width: `${progressPercent}%` }}
+                        ></div>
+                      </div>
                     </div>
                   </div>
                 </Link>

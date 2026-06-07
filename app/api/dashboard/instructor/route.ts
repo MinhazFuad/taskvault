@@ -10,7 +10,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Instructor ID is required' }, { status: 400 });
     }
 
-    // 1. Fetch Instructor Profile & Aggregate Metrics
+    // 1. Fetch Aggregated Metrics
     const [userRows]: any = await pool.execute(
       `SELECT 
           U.Full_Name,
@@ -24,16 +24,13 @@ export async function GET(request: Request) {
       [instructorId, instructorId, instructorId]
     );
 
-    if (userRows.length === 0) {
-      return NextResponse.json({ error: 'Instructor not found' }, { status: 404 });
-    }
-
-    // 2. Fetch Course Creation History Ledger
+    // 2. Fetch Detailed Course History with Completion Stats
     const [courseRows]: any = await pool.execute(
-      `SELECT Course_ID, Title, Description, Total_Modules, Reward_RP, Reward_Skill
-       FROM Courses 
-       WHERE Instructor_ID = ? 
-       ORDER BY Course_ID DESC`,
+      `SELECT C.Course_ID, C.Title, C.Description, C.Total_Modules, C.Reward_RP, C.Reward_Skill,
+              (SELECT COUNT(*) FROM Student_Course_Progress WHERE Course_ID = C.Course_ID AND Is_Completed = TRUE) AS Completed_Count
+       FROM Courses C
+       WHERE C.Instructor_ID = ? 
+       ORDER BY C.Course_ID DESC`,
       [instructorId]
     );
 

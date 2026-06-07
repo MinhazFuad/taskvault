@@ -8,47 +8,45 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('id');
 
-    if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
 
-    // 1. Fetch User Base & Metrics
     const [userRows]: any = await pool.execute(
-      `SELECT 
-          U.User_ID, U.Full_Name, U.Email, U.Username, U.Bio, U.Profile_Picture, U.Banner_Picture,
-          SM.Available_Rep_Points, SM.Total_Bounties_Completed,
-          CASE 
-            WHEN SM.Available_Rep_Points >= 801 THEN 'Advanced'
-            WHEN SM.Available_Rep_Points >= 301 THEN 'Intermediate'
-            ELSE 'Junior'
-          END AS Skill_Level
+      `SELECT U.Full_Name, U.Email, U.Username, U.Role, U.Profile_Picture, U.Banner_Image, U.Bio,
+              SM.Available_Rep_Points,
+              CASE 
+                WHEN SM.Available_Rep_Points >= 801 THEN 'Advanced'
+                WHEN SM.Available_Rep_Points >= 301 THEN 'Intermediate'
+                ELSE 'Junior'
+              END AS Skill_Level,
+              W.Available_Credits
        FROM Users U
        LEFT JOIN Student_Metrics SM ON U.User_ID = SM.Student_ID
+       LEFT JOIN User_Wallets W ON U.User_ID = W.User_ID
        WHERE U.User_ID = ?`,
       [userId]
     );
 
     if (userRows.length === 0) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-    // 2. Fetch Completed Courses & Earned Skills
     const [courseRows]: any = await pool.execute(
-      `SELECT C.Course_ID, C.Title, C.Reward_Skill, C.Reward_RP
+      `SELECT C.Title, C.Reward_Skill, P.Completed_At 
        FROM Student_Course_Progress P
        JOIN Courses C ON P.Course_ID = C.Course_ID
-       WHERE P.Student_ID = ? AND P.Is_Completed = 1`,
+       WHERE P.Student_ID = ? AND P.Is_Completed = 1
+       ORDER BY P.Completed_At DESC`,
       [userId]
     );
 
-    // Extract unique skills from completed courses
-    const skills = Array.from(new Set(courseRows.map((c: any) => c.Reward_Skill.trim())));
+    const skills = Array.from(new Set(courseRows.map((r: any) => r.Reward_Skill)));
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: {
         ...userRows[0],
-        completedCourses: courseRows,
-        skills
-      } 
-    }, { status: 200 });
-
+        courses: courseRows,
+        skills: skills
+      }
+    });
   } catch (error) {
     console.error("Profile GET Error:", error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -57,7 +55,6 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const connection = await pool.getConnection();
-
   try {
     const formData = await request.formData();
     const userId = formData.get('userId') as string;
@@ -67,23 +64,8 @@ export async function POST(request: Request) {
     const avatar = formData.get('avatar') as File | null;
     const banner = formData.get('banner') as File | null;
 
-    if (!userId) return NextResponse.json({ error: 'User ID required for update' }, { status: 400 });
+    if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
 
-    await connection.beginTransaction();
-
-    // Check if username is taken by someone else
-    if (username) {
-      const [existing]: any = await connection.execute(
-        `SELECT User_ID FROM Users WHERE Username = ? AND User_ID != ?`,
-        [username, userId]
-      );
-      if (existing.length > 0) {
-        await connection.rollback();
-        return NextResponse.json({ error: 'Username is already taken.' }, { status: 400 });
-      }
-    }
-
-    // Process File Uploads
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'profiles');
     await mkdir(uploadDir, { recursive: true });
 
@@ -92,43 +74,40 @@ export async function POST(request: Request) {
 
     if (avatar && avatar.size > 0) {
       const buffer = Buffer.from(await avatar.arrayBuffer());
-      const filename = `avatar-${userId}-${Date.now()}.png`;
+      const filename = `avatar-${userId}-${Date.now()}${path.extname(avatar.name)}`;
       await writeFile(path.join(uploadDir, filename), buffer);
       avatarPath = `/uploads/profiles/${filename}`;
     }
 
     if (banner && banner.size > 0) {
       const buffer = Buffer.from(await banner.arrayBuffer());
-      const filename = `banner-${userId}-${Date.now()}.png`;
+      const filename = `banner-${userId}-${Date.now()}${path.extname(banner.name)}`;
       await writeFile(path.join(uploadDir, filename), buffer);
       bannerPath = `/uploads/profiles/${filename}`;
     }
 
-    // Dynamic SQL Update Construction
-    let updateQuery = `UPDATE Users SET Username = ?, Bio = ?`;
-    let queryParams: any[] = [username, bio];
+    const updates = [];
+    const values = [];
 
-    if (avatarPath) {
-      updateQuery += `, Profile_Picture = ?`;
-      queryParams.push(avatarPath);
+    if (username !== null) { updates.push("Username = ?"); values.push(username); }
+    if (bio !== null) { updates.push("Bio = ?"); values.push(bio); }
+    if (avatarPath !== null) { updates.push("Profile_Picture = ?"); values.push(avatarPath); }
+    if (bannerPath !== null) { updates.push("Banner_Image = ?"); values.push(bannerPath); }
+
+    if (updates.length > 0) {
+      values.push(userId);
+      await connection.execute(
+        `UPDATE Users SET ${updates.join(', ')} WHERE User_ID = ?`,
+        values
+      );
     }
-    if (bannerPath) {
-      updateQuery += `, Banner_Picture = ?`;
-      queryParams.push(bannerPath);
-    }
 
-    updateQuery += ` WHERE User_ID = ?`;
-    queryParams.push(userId);
+    return NextResponse.json({ success: true, message: 'Profile updated successfully!' });
 
-    await connection.execute(updateQuery, queryParams);
-    await connection.commit();
-
-    return NextResponse.json({ success: true, message: 'Profile updated successfully!' }, { status: 200 });
-
-  } catch (error) {
-    await connection.rollback();
+  } catch (error: any) {
     console.error("Profile POST Error:", error);
-    return NextResponse.json({ error: 'Failed to update profile.' }, { status: 500 });
+    if (error.code === 'ER_DUP_ENTRY') return NextResponse.json({ error: 'Username already taken.' }, { status: 409 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   } finally {
     connection.release();
   }

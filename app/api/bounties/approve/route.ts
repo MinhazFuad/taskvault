@@ -5,7 +5,7 @@ export async function POST(request: Request) {
   const connection = await pool.getConnection();
 
   try {
-    const { bountyId, corporateUserId } = await request.json();
+    const { bountyId, corporateUserId, corporateRating, corporateReview } = await request.json();
 
     if (!bountyId || !corporateUserId) {
       return NextResponse.json({ error: 'Bounty ID and Corporate User ID are required' }, { status: 400 });
@@ -13,7 +13,6 @@ export async function POST(request: Request) {
 
     await connection.beginTransaction();
 
-    // Pulled Created_At, Due_Date, and Submitted_At to calculate speed metrics
     const [bountyRows]: any = await connection.execute(
       `SELECT Corporate_User_ID, Assigned_Student_ID, Reward_Amount, Status, Required_RP, Created_At, Due_Date, Submitted_At 
        FROM Bounties 
@@ -45,16 +44,17 @@ export async function POST(request: Request) {
     // ----- BONUS RP CALCULATION ENGINE -----
     const createdAt = new Date(bounty.Created_At).getTime();
     const dueDate = new Date(bounty.Due_Date).getTime();
-    // Fallback to Date.now() if they submitted before we added the new DB column
+    
+    // Fallback to Date.now() if Submitted_At is missing for some reason
     const submittedAt = bounty.Submitted_At ? new Date(bounty.Submitted_At).getTime() : Date.now();
 
     const totalGivenTime = dueDate - createdAt;
     const timeTaken = submittedAt - createdAt;
 
-    // Base 25% completion bonus
+    // Base 25% Bonus
     let bonusMultiplier = 0.25; 
     
-    // If completed in less than half the time, add the extra 50% on top (Total 75% Bonus)
+    // +50% on top (75% total) if completed in half the time or less
     if (totalGivenTime > 0 && timeTaken <= (totalGivenTime / 2)) {
       bonusMultiplier = 0.75; 
     }
@@ -77,14 +77,17 @@ export async function POST(request: Request) {
       [studentId, rewardAmount, rewardAmount]
     );
 
+    // Persist optional ratings (Safeguard in case Corporate Rating UI isn't restored yet)
+    const rating = corporateRating || null;
+    const review = corporateReview || null;
+
     await connection.execute(
       `UPDATE Bounties 
-       SET Status = 'Completed' 
+       SET Status = 'Completed', Corporate_Rating = ?, Corporate_Review = ? 
        WHERE Bounty_ID = ?`,
-      [bountyId]
+      [rating, review, bountyId]
     );
 
-    // Refund staked RP + apply the calculated completion bonuses
     await connection.execute(
       `UPDATE Student_Metrics 
        SET Available_Rep_Points = Available_Rep_Points + ?,
@@ -97,7 +100,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ 
       success: true, 
-      message: `Deliverables approved! Escrow released. Talent earned +${rpBonus} Bonus RP for completion speed.` 
+      message: `Deliverables approved! Escrow released and Candidate rewarded ${totalRpToRefund} RP (Stake + Bonus).` 
     }, { status: 200 });
 
   } catch (error) {
