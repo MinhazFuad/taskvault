@@ -9,10 +9,10 @@ export async function GET(request: Request) {
 
     if (corporateUserId) {
       const [rows] = await pool.execute(
-        `SELECT B.*, C.Company_Name 
+        `SELECT B.*, C.Company_Name
          FROM Bounties B
          JOIN Corporate_Organizations C ON B.Corporate_User_ID = C.User_ID
-         WHERE B.Corporate_User_ID = ? 
+         WHERE B.Corporate_User_ID = ?
          ORDER BY B.Created_At DESC`,
         [corporateUserId]
       );
@@ -20,11 +20,20 @@ export async function GET(request: Request) {
     }
 
     if (status === 'Open') {
+      // Include the corporate client's average rating (from students) on every open bounty
       const [rows] = await pool.execute(
-        `SELECT B.*, C.Company_Name 
+        `SELECT B.*, C.Company_Name,
+            (SELECT COALESCE(ROUND(AVG(Student_Rating), 1), NULL)
+             FROM Bounties
+             WHERE Corporate_User_ID = B.Corporate_User_ID AND Student_Rating IS NOT NULL
+            ) AS Avg_Client_Rating,
+            (SELECT COUNT(*)
+             FROM Bounties
+             WHERE Corporate_User_ID = B.Corporate_User_ID AND Student_Rating IS NOT NULL
+            ) AS Rating_Count
          FROM Bounties B
          JOIN Corporate_Organizations C ON B.Corporate_User_ID = C.User_ID
-         WHERE B.Status = 'Open' 
+         WHERE B.Status = 'Open'
          ORDER BY B.Created_At DESC`
       );
       return NextResponse.json({ success: true, data: rows }, { status: 200 });
@@ -32,7 +41,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ error: 'Missing required query parameters' }, { status: 400 });
   } catch (error) {
-    console.error("Bounties GET Error:", error);
+    console.error('Bounties GET Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -49,7 +58,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'All fields are required and reward amount must be greater than 0' }, { status: 400 });
     }
 
-    // Map Corporate Experience Levels to your new strict RP thresholds
     let requiredRp = 0;
     if (experienceLevel === 'Intermediate') requiredRp = 301;
     if (experienceLevel === 'Advanced') requiredRp = 801;
@@ -74,25 +82,24 @@ export async function POST(request: Request) {
     }
 
     await connection.execute(
-      `UPDATE User_Wallets 
-       SET Available_Credits = Available_Credits - ?, 
-           Escrow_Balance = Escrow_Balance + ? 
+      `UPDATE User_Wallets
+       SET Available_Credits = Available_Credits - ?,
+           Escrow_Balance = Escrow_Balance + ?
        WHERE User_ID = ?`,
       [amount, amount, corporateUserId]
     );
 
     await connection.execute(
-      `INSERT INTO Bounties (Corporate_User_ID, Title, Description, Reward_Amount, Experience_Level, Required_RP, Required_Skill, Due_Date, Status) 
+      `INSERT INTO Bounties (Corporate_User_ID, Title, Description, Reward_Amount, Experience_Level, Required_RP, Required_Skill, Due_Date, Status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Open')`,
       [corporateUserId, title, description, amount, experienceLevel, requiredRp, requiredSkill, dueDate]
     );
 
     await connection.commit();
-
     return NextResponse.json({ success: true, message: 'Bounty posted and escrow locked' }, { status: 201 });
   } catch (error) {
     await connection.rollback();
-    console.error("Bounty Creation Error:", error);
+    console.error('Bounty Creation Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   } finally {
     connection.release();

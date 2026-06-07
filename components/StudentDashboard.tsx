@@ -40,20 +40,39 @@ export default function StudentDashboard({ userId }: { userId: number }) {
   const bounties = dashboardData?.bounties || [];
   const activeBounties = bounties.filter((b: any) => b.Status === 'Assigned' || b.Status === 'Under_Review');
 
+  const cooldownUntil = metrics?.Cooldown_Until ? new Date(metrics.Cooldown_Until) : null;
+  const isOnCooldown = cooldownUntil && cooldownUntil > new Date();
+  const cooldownDaysLeft = isOnCooldown
+    ? Math.ceil((cooldownUntil!.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : 0;
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 text-white">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Welcome, {metrics?.Full_Name}</h1>
-        <Link 
-          href="/dashboard/my-bounties" 
+        <Link
+          href="/dashboard/my-bounties"
           className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all text-sm"
         >
           Go to Execution Studio &rarr;
         </Link>
       </div>
 
+      {/* COOLDOWN BANNER */}
+      {isOnCooldown && (
+        <div className="bg-red-500/10 border border-red-500/40 rounded-2xl p-4 flex items-start gap-3">
+          <span className="text-red-400 text-xl mt-0.5">⛔</span>
+          <div>
+            <p className="font-bold text-red-400 text-sm">Account on Penalty Cooldown</p>
+            <p className="text-red-300/70 text-xs mt-0.5">
+              You missed a bounty deadline. New bounty claims are blocked for <strong>{cooldownDaysLeft} more {cooldownDaysLeft === 1 ? 'day' : 'days'}</strong> (until {cooldownUntil!.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}).
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* METRICS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         <div className="bg-slate-800/80 backdrop-blur-sm p-6 rounded-2xl border border-slate-700 shadow-lg">
           <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">Reputation Points</h3>
           <p className="text-3xl font-extrabold text-blue-400 mt-2">{metrics?.Available_Rep_Points || 0} RP</p>
@@ -77,6 +96,29 @@ export default function StudentDashboard({ userId }: { userId: number }) {
         <div className="bg-slate-800/80 backdrop-blur-sm p-6 rounded-2xl border border-slate-700 shadow-lg">
           <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">Wallet Balance</h3>
           <p className="text-3xl font-extrabold text-emerald-400 mt-2">${parseFloat(metrics?.Fiat_Balance || 0).toFixed(2)}</p>
+        </div>
+
+        <div className="bg-slate-800/80 backdrop-blur-sm p-6 rounded-2xl border border-yellow-500/20 shadow-lg">
+          <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">Client Rating</h3>
+          {metrics?.Avg_Talent_Rating ? (
+            <>
+              <div className="flex items-end gap-2 mt-2">
+                <p className="text-3xl font-extrabold text-yellow-400">{metrics.Avg_Talent_Rating}</p>
+                <p className="text-slate-400 text-sm font-bold mb-1">/ 5</p>
+              </div>
+              <div className="flex gap-0.5 mt-1">
+                {[1,2,3,4,5].map(s => (
+                  <span key={s} className={`text-sm ${s <= Math.round(metrics.Avg_Talent_Rating) ? 'text-yellow-400' : 'text-slate-700'}`}>★</span>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1">{metrics.Total_Talent_Reviews} {metrics.Total_Talent_Reviews === 1 ? 'review' : 'reviews'} from clients</p>
+            </>
+          ) : (
+            <>
+              <p className="text-3xl font-extrabold text-slate-600 mt-2">—</p>
+              <p className="text-[10px] text-slate-600 mt-1">No client reviews yet</p>
+            </>
+          )}
         </div>
       </div>
 

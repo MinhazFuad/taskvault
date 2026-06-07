@@ -102,7 +102,7 @@ export default function CorporateDashboard({ userId }: { userId: number }) {
       </div>
       
       {/* METRICS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <div className="bg-slate-800/80 backdrop-blur-sm p-6 rounded-2xl border border-slate-700 shadow-lg flex flex-col justify-between">
           <div>
             <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">Available Credits</h3>
@@ -110,7 +110,7 @@ export default function CorporateDashboard({ userId }: { userId: number }) {
               ${parseFloat(metrics?.Fiat_Balance || 0).toFixed(2)}
             </p>
           </div>
-          <button 
+          <button
             onClick={() => setShowDepositModal(true)}
             className="mt-6 w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 rounded-lg transition-all border border-slate-600 text-sm"
           >
@@ -126,7 +126,7 @@ export default function CorporateDashboard({ userId }: { userId: number }) {
             </p>
             <p className="text-[10px] text-slate-500 mt-1">Locked securely in pending bounties</p>
           </div>
-          <Link 
+          <Link
             href="/dashboard/manage-bounties"
             className="mt-6 block w-full text-center bg-slate-900/60 hover:bg-slate-900 text-slate-400 hover:text-white font-semibold py-2 rounded-lg transition-all border border-slate-800 text-sm"
           >
@@ -142,12 +142,35 @@ export default function CorporateDashboard({ userId }: { userId: number }) {
             </p>
             <p className="text-[10px] text-slate-500 mt-1">Awaiting corporate approval</p>
           </div>
-          <Link 
+          <Link
             href="/dashboard/submissions"
             className="mt-6 block w-full text-center bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 font-bold py-2 rounded-lg transition-all border border-blue-500/30 text-sm"
           >
             Open Review Terminal &rarr;
           </Link>
+        </div>
+
+        <div className="bg-slate-800/80 backdrop-blur-sm p-6 rounded-2xl border border-yellow-500/20 shadow-lg">
+          <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">Talent Satisfaction</h3>
+          {metrics?.Avg_Client_Rating ? (
+            <>
+              <div className="flex items-end gap-2 mt-2">
+                <p className="text-3xl font-extrabold text-yellow-400">{metrics.Avg_Client_Rating}</p>
+                <p className="text-slate-400 text-sm font-bold mb-1">/ 5</p>
+              </div>
+              <div className="flex gap-0.5 mt-1">
+                {[1,2,3,4,5].map(s => (
+                  <span key={s} className={`text-sm ${s <= Math.round(metrics.Avg_Client_Rating) ? 'text-yellow-400' : 'text-slate-700'}`}>★</span>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1">from {metrics.Total_Client_Reviews} {metrics.Total_Client_Reviews === 1 ? 'review' : 'reviews'} by talent</p>
+            </>
+          ) : (
+            <>
+              <p className="text-3xl font-extrabold text-slate-600 mt-2">—</p>
+              <p className="text-[10px] text-slate-600 mt-1">No reviews yet from talent</p>
+            </>
+          )}
         </div>
       </div>
 

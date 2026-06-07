@@ -31,13 +31,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'This bounty is no longer open for assignment' }, { status: 400 });
     }
 
-    // 2. Lock and fetch the student's active Reputation Points securely
+    // 2. Lock and fetch the student's metrics (RP + cooldown)
     const [studentRows]: any = await connection.execute(
-      `SELECT Available_Rep_Points FROM Student_Metrics WHERE Student_ID = ? FOR UPDATE`,
+      `SELECT Available_Rep_Points, Cooldown_Until FROM Student_Metrics WHERE Student_ID = ? FOR UPDATE`,
       [studentId]
     );
 
     const studentRp = studentRows.length > 0 ? parseInt(studentRows[0].Available_Rep_Points) : 0;
+
+    // Block claim if the student is currently on cooldown
+    if (studentRows.length > 0 && studentRows[0].Cooldown_Until) {
+      const cooldownEnd = new Date(studentRows[0].Cooldown_Until);
+      if (cooldownEnd > new Date()) {
+        await connection.rollback();
+        const until = cooldownEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        return NextResponse.json({
+          error: `Your account is on a 7-day penalty cooldown until ${until}. You cannot claim new bounties during this period.`
+        }, { status: 403 });
+      }
+    }
 
     // 3. Reality Check A: Verify Tier Threshold
     if (studentRp < bounty.Required_RP) {

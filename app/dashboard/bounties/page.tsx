@@ -9,6 +9,7 @@ export default function PublicBountyBoardPage() {
   const [userId, setUserId] = useState<number | null>(null);
   const [studentRp, setStudentRp] = useState<number>(0);
   const [studentSkills, setStudentSkills] = useState<string[]>([]);
+  const [cooldownUntil, setCooldownUntil] = useState<Date | null>(null);
   const [bounties, setBounties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -39,6 +40,8 @@ export default function PublicBountyBoardPage() {
       if (metricsJson.success && metricsJson.data) {
         setStudentRp(parseInt(metricsJson.data.Available_Rep_Points) || 0);
         setStudentSkills(metricsJson.data.earnedSkills || []);
+        const cd = metricsJson.data.Cooldown_Until ? new Date(metricsJson.data.Cooldown_Until) : null;
+        setCooldownUntil(cd && cd > new Date() ? cd : null);
       }
 
       const bountiesRes = await fetch(`/api/bounties?status=Open&t=${Date.now()}`, { cache: 'no-store' });
@@ -94,13 +97,31 @@ export default function PublicBountyBoardPage() {
   };
 
   const studentLevel = getStudentLevel(studentRp);
+  const cooldownDaysLeft = cooldownUntil
+    ? Math.ceil((cooldownUntil.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col text-white">
       <TopNav role="Student" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
-        
+
+        {/* COOLDOWN BANNER */}
+        {cooldownUntil && (
+          <div className="bg-red-500/10 border border-red-500/40 rounded-2xl p-5 flex items-start gap-3">
+            <span className="text-red-400 text-xl mt-0.5 shrink-0">⛔</span>
+            <div>
+              <p className="font-bold text-red-400">Bounty Claims Blocked — Penalty Cooldown Active</p>
+              <p className="text-red-300/70 text-sm mt-0.5">
+                You missed a bounty deadline. You cannot claim new bounties for{' '}
+                <strong>{cooldownDaysLeft} more {cooldownDaysLeft === 1 ? 'day' : 'days'}</strong>{' '}
+                (until {cooldownUntil.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}).
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="bg-slate-800/80 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white tracking-tight">Public Bounty Board</h1>
@@ -130,7 +151,7 @@ export default function PublicBountyBoardPage() {
             {bounties.map(bounty => {
               const meetsTier = studentRp >= bounty.Required_RP;
               const meetsSkill = studentSkills.includes(bounty.Required_Skill.toLowerCase().trim());
-              const isQualified = meetsTier && meetsSkill;
+              const isQualified = meetsTier && meetsSkill && !cooldownUntil;
               
               const isLoadingThis = actionLoading === bounty.Bounty_ID;
               const daysUntilDue = Math.ceil((new Date(bounty.Due_Date).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
@@ -140,7 +161,17 @@ export default function PublicBountyBoardPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-start gap-4">
                       <div>
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">{bounty.Company_Name}</span>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{bounty.Company_Name}</span>
+                          {bounty.Avg_Client_Rating ? (
+                            <span className="flex items-center gap-0.5 bg-yellow-500/10 border border-yellow-500/20 px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400">
+                              ★ {bounty.Avg_Client_Rating}
+                              <span className="text-slate-500 font-normal ml-1">({bounty.Rating_Count})</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-600 font-medium">No ratings yet</span>
+                          )}
+                        </div>
                         <h2 className="text-xl font-bold text-white tracking-tight leading-snug">{bounty.Title}</h2>
                       </div>
                       <div className="bg-slate-900/80 border border-slate-700 px-3 py-1.5 rounded-lg text-right shrink-0">
@@ -178,8 +209,9 @@ export default function PublicBountyBoardPage() {
                       </button>
                     ) : (
                       <div className="w-full bg-slate-900/80 border border-red-500/30 text-red-400/90 text-xs font-semibold py-2 rounded-xl text-center flex flex-col items-center justify-center gap-1 cursor-not-allowed">
-                        {!meetsTier && <span>🔒 Requires {bounty.Experience_Level} Tier</span>}
-                        {!meetsSkill && <span>🔒 Missing Skill: {bounty.Required_Skill}</span>}
+                        {cooldownUntil && <span>⛔ Cooldown active — {cooldownDaysLeft}d remaining</span>}
+                        {!cooldownUntil && !meetsTier && <span>🔒 Requires {bounty.Experience_Level} Tier</span>}
+                        {!cooldownUntil && !meetsSkill && <span>🔒 Missing Skill: {bounty.Required_Skill}</span>}
                       </div>
                     )}
                   </div>
