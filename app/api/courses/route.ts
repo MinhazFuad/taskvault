@@ -19,12 +19,13 @@ export async function GET(request: Request) {
     if (studentId) {
       // IF A STUDENT IS ASKING: Fetch the catalog and attach their personal progress
       const [rows] = await pool.execute(
-        `SELECT 
-            C.Course_ID, C.Title, C.Description, C.Total_Modules, C.Reward_RP, C.Reward_Skill,
+        `SELECT
+            C.Course_ID, C.Title, C.Description, C.Cover_Image, C.Image_Zoom, C.Image_X, C.Image_Y,
+            C.Total_Modules, C.Reward_RP, C.Reward_Skill,
             COALESCE(P.Completed_Modules, 0) AS Completed_Modules,
             COALESCE(P.Is_Completed, 0) AS Is_Completed
          FROM Courses C
-         LEFT JOIN Student_Course_Progress P 
+         LEFT JOIN Student_Course_Progress P
             ON C.Course_ID = P.Course_ID AND P.Student_ID = ?`,
         [studentId]
       );
