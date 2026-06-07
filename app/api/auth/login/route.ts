@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     // 1. Find the user in the database
     const [rows]: any = await pool.execute(
-      `SELECT User_ID, Full_Name, Password_Hash, Role FROM Users WHERE Email = ?`,
+      `SELECT User_ID, Full_Name, Password_Hash, Role, Is_Banned FROM Users WHERE Email = ?`,
       [email]
     );
 
@@ -28,6 +28,13 @@ export async function POST(request: Request) {
 
     if (!isPasswordValid) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    // 3. Block banned accounts
+    if (user.Is_Banned) {
+      return NextResponse.json({
+        error: 'Your account has been suspended. Contact support if you believe this is an error.'
+      }, { status: 403 });
     }
 
     // 3. Create the JWT Token

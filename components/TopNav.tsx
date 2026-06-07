@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Instructor' }) {
+export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Instructor' | 'Admin' }) {
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -86,12 +86,18 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
                   <Link href="/dashboard/create-course" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Course Builder</Link>
                 </>
               )}
+
+              {role === 'Admin' && (
+                <>
+                  <Link href="/dashboard/admin/users" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Manage Users</Link>
+                </>
+              )}
             </div>
           </div>
           
           <div className="flex items-center gap-5">
-            <span className="px-3 py-1 rounded-full bg-slate-800 text-xs font-semibold text-slate-300 border border-slate-700 hidden sm:block">
-              {role} View
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold border hidden sm:block ${role === 'Admin' ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>
+              {role === 'Admin' ? '⚡ Admin' : `${role} View`}
             </span>
             
             {/* MODERN PROFILE AVATAR DROPDOWN */}
@@ -123,12 +129,22 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
 
                   {/* Contextual Links */}
                   {role === 'Student' && (
-                    <Link 
-                      href="/dashboard/profile" 
+                    <Link
+                      href="/dashboard/profile"
                       className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
                       onClick={() => setDropdownOpen(false)}
                     >
                       <span>👤</span> My Profile
+                    </Link>
+                  )}
+
+                  {role === 'Admin' && (
+                    <Link
+                      href="/dashboard/admin/users"
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <span>⚡</span> User Management
                     </Link>
                   )}
                   
