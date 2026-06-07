@@ -25,7 +25,7 @@ export default function CoursesCatalog() {
         const coursesJson = await coursesRes.json();
 
         if (coursesJson.success) {
-          setCourses(coursesJson.data);
+          setCourses(coursesJson.data.filter((c: any) => !c.Is_Completed));
         } else {
           setError(coursesJson.error || "Failed to load courses");
         }
@@ -65,6 +65,12 @@ export default function CoursesCatalog() {
         ) : error ? (
           <div className="bg-red-500/10 border border-red-500 rounded-2xl p-6 text-red-400 text-center font-semibold">
             {error}
+          </div>
+        ) : courses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="text-6xl mb-5">🎓</div>
+            <h2 className="text-xl font-bold text-white mb-2">All courses completed!</h2>
+            <p className="text-slate-400 text-sm max-w-xs">You've finished everything in the catalog. Check back later for new courses.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
