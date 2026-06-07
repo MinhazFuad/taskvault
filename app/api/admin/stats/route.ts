@@ -60,9 +60,18 @@ export async function GET() {
       LIMIT 8
     `);
 
+    const [[appStats]]: any = await pool.execute(`
+      SELECT
+        COUNT(*) AS Total_Applications,
+        SUM(CASE WHEN Status = 'Pending'      THEN 1 ELSE 0 END) AS Pending_Applications,
+        SUM(CASE WHEN Status = 'Interview_Called' THEN 1 ELSE 0 END) AS Interview_Applications,
+        SUM(CASE WHEN Status = 'Rejected'     THEN 1 ELSE 0 END) AS Rejected_Applications
+      FROM Instructor_Applications
+    `);
+
     return NextResponse.json({
       success: true,
-      data: { userStats, bountyStats, courseStats, recentUsers }
+      data: { userStats, bountyStats, courseStats, recentUsers, appStats }
     });
   } catch (error) {
     console.error('Admin Stats Error:', error);

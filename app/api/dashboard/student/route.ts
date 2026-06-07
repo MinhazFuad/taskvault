@@ -16,12 +16,16 @@ export async function GET(request: Request) {
           SM.Available_Rep_Points,
           SM.Cooldown_Until,
           CASE
-            WHEN SM.Available_Rep_Points >= 801 THEN 'Advanced'
-            WHEN SM.Available_Rep_Points >= 301 THEN 'Intermediate'
+            WHEN SM.Available_Rep_Points >= 1001 THEN 'Advanced'
+            WHEN SM.Available_Rep_Points >= 401 THEN 'Intermediate'
             ELSE 'Junior'
           END AS Skill_Level,
           W.Available_Credits AS Fiat_Balance,
-          (SELECT COALESCE(SUM(Required_RP), 0)
+          (SELECT COALESCE(SUM(CASE Experience_Level
+              WHEN 'Intermediate' THEN 40
+              WHEN 'Advanced'     THEN 80
+              ELSE                     20
+            END), 0)
            FROM Bounties
            WHERE Assigned_Student_ID = ? AND Status IN ('Assigned', 'Under_Review')
           ) AS Locked_RP,

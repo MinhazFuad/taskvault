@@ -59,8 +59,8 @@ export async function POST(request: Request) {
     }
 
     let requiredRp = 0;
-    if (experienceLevel === 'Intermediate') requiredRp = 301;
-    if (experienceLevel === 'Advanced') requiredRp = 801;
+    if (experienceLevel === 'Intermediate') requiredRp = 401;
+    if (experienceLevel === 'Advanced') requiredRp = 1001;
 
     await connection.beginTransaction();
 

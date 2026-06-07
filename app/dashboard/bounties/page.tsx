@@ -16,9 +16,15 @@ export default function PublicBountyBoardPage() {
   const [error, setError] = useState<string | null>(null);
 
   const getStudentLevel = (rp: number) => {
-    if (rp >= 801) return 'Advanced';
-    if (rp >= 301) return 'Intermediate';
+    if (rp >= 1001) return 'Advanced';
+    if (rp >= 401) return 'Intermediate';
     return 'Junior';
+  };
+
+  const getStake = (level: string) => {
+    if (level === 'Intermediate') return 40;
+    if (level === 'Advanced') return 80;
+    return 20;
   };
 
   const loadBountyBoard = async () => {
@@ -63,7 +69,7 @@ export default function PublicBountyBoardPage() {
     loadBountyBoard();
   }, [router]);
 
-  const handleClaimBounty = async (bountyId: number, requiredRp: number, requiredSkill: string) => {
+  const handleClaimBounty = async (bountyId: number, requiredRp: number, requiredSkill: string, stakeRp: number) => {
     if (!userId) return;
 
     const hasSkill = studentSkills.includes(requiredSkill.toLowerCase().trim());
@@ -71,8 +77,12 @@ export default function PublicBountyBoardPage() {
       alert(`Access Denied: You do not meet the exact tier and skill prerequisites for this task.`);
       return;
     }
+    if (studentRp < stakeRp) {
+      alert(`Insufficient RP: This bounty requires a ${stakeRp} RP stake but you only have ${studentRp} RP available.`);
+      return;
+    }
 
-    if (!confirm("Are you ready to commit to delivering this bounty? Accepting locks this task to your profile.")) return;
+    if (!confirm(`Commit to this bounty? You will stake ${stakeRp} RP — returned with a bonus on approval, forfeited on deadline miss.`)) return;
 
     setActionLoading(bountyId);
 
@@ -149,9 +159,11 @@ export default function PublicBountyBoardPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {bounties.map(bounty => {
+              const stakeRp = getStake(bounty.Experience_Level);
               const meetsTier = studentRp >= bounty.Required_RP;
               const meetsSkill = studentSkills.includes(bounty.Required_Skill.toLowerCase().trim());
-              const isQualified = meetsTier && meetsSkill && !cooldownUntil;
+              const canAffordStake = studentRp >= stakeRp;
+              const isQualified = meetsTier && meetsSkill && canAffordStake && !cooldownUntil;
               
               const isLoadingThis = actionLoading === bounty.Bounty_ID;
               const daysUntilDue = Math.ceil((new Date(bounty.Due_Date).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
@@ -191,11 +203,16 @@ export default function PublicBountyBoardPage() {
                           {bounty.Required_Skill}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-slate-500 font-normal">Tier:</span>
-                        <span className={`font-bold ${!meetsTier ? 'text-red-400' : bounty.Experience_Level === 'Advanced' ? 'text-purple-400' : bounty.Experience_Level === 'Intermediate' ? 'text-blue-400' : 'text-emerald-400'}`}>
-                          {bounty.Experience_Level}
-                        </span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-slate-500 font-normal">Tier:</span>
+                          <span className={`font-bold ${!meetsTier ? 'text-red-400' : bounty.Experience_Level === 'Advanced' ? 'text-purple-400' : bounty.Experience_Level === 'Intermediate' ? 'text-blue-400' : 'text-emerald-400'}`}>
+                            {bounty.Experience_Level}
+                          </span>
+                        </div>
+                        <div className={`flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-bold ${canAffordStake ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                          Stakes {stakeRp} RP
+                        </div>
                       </div>
                     </div>
                     
@@ -204,14 +221,15 @@ export default function PublicBountyBoardPage() {
                     </div>
 
                     {isQualified ? (
-                      <button onClick={() => handleClaimBounty(bounty.Bounty_ID, bounty.Required_RP, bounty.Required_Skill)} disabled={isLoadingThis} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center gap-2">
-                        {isLoadingThis ? <span className="animate-pulse font-semibold">Claiming...</span> : <span>⚡ Claim This Bounty</span>}
+                      <button onClick={() => handleClaimBounty(bounty.Bounty_ID, bounty.Required_RP, bounty.Required_Skill, stakeRp)} disabled={isLoadingThis} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center gap-2">
+                        {isLoadingThis ? <span className="animate-pulse font-semibold">Claiming...</span> : <span>⚡ Claim — Stakes {stakeRp} RP</span>}
                       </button>
                     ) : (
                       <div className="w-full bg-slate-900/80 border border-red-500/30 text-red-400/90 text-xs font-semibold py-2 rounded-xl text-center flex flex-col items-center justify-center gap-1 cursor-not-allowed">
                         {cooldownUntil && <span>⛔ Cooldown active — {cooldownDaysLeft}d remaining</span>}
                         {!cooldownUntil && !meetsTier && <span>🔒 Requires {bounty.Experience_Level} Tier</span>}
                         {!cooldownUntil && !meetsSkill && <span>🔒 Missing Skill: {bounty.Required_Skill}</span>}
+                        {!cooldownUntil && meetsTier && meetsSkill && !canAffordStake && <span>🔒 Need {stakeRp} RP to stake</span>}
                       </div>
                     )}
                   </div>

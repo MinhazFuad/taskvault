@@ -14,8 +14,8 @@ export async function POST(request: Request) {
     await connection.beginTransaction();
 
     const [bountyRows]: any = await connection.execute(
-      `SELECT Corporate_User_ID, Assigned_Student_ID, Reward_Amount, Status, Required_RP, Created_At, Due_Date, Submitted_At 
-       FROM Bounties 
+      `SELECT Corporate_User_ID, Assigned_Student_ID, Reward_Amount, Status, Experience_Level, Created_At, Due_Date, Submitted_At
+       FROM Bounties
        WHERE Bounty_ID = ? FOR UPDATE`,
       [bountyId]
     );
@@ -38,8 +38,10 @@ export async function POST(request: Request) {
     }
 
     const rewardAmount = parseFloat(bounty.Reward_Amount);
-    const requiredRp = parseInt(bounty.Required_RP) || 0;
     const studentId = bounty.Assigned_Student_ID;
+
+    const STAKE: Record<string, number> = { Junior: 20, Intermediate: 40, Advanced: 80 };
+    const stakeAmount = STAKE[bounty.Experience_Level] ?? 20;
 
     // ----- BONUS RP CALCULATION ENGINE -----
     const createdAt = new Date(bounty.Created_At).getTime();
@@ -59,8 +61,8 @@ export async function POST(request: Request) {
       bonusMultiplier = 0.75; 
     }
 
-    const rpBonus = Math.floor(requiredRp * bonusMultiplier);
-    const totalRpToRefund = requiredRp + rpBonus;
+    const rpBonus = Math.floor(stakeAmount * bonusMultiplier);
+    const totalRpToRefund = stakeAmount + rpBonus;
     // ---------------------------------------
 
     await connection.execute(

@@ -13,9 +13,9 @@ export async function POST(request: Request) {
 
     await connection.beginTransaction();
 
-    // 1. Lock and inspect the bounty (Now pulling Required_Skill)
+    // 1. Lock and inspect the bounty
     const [bountyRows]: any = await connection.execute(
-      `SELECT Status, Required_RP, Required_Skill FROM Bounties WHERE Bounty_ID = ? FOR UPDATE`,
+      `SELECT Status, Required_RP, Required_Skill, Experience_Level FROM Bounties WHERE Bounty_ID = ? FOR UPDATE`,
       [bountyId]
     );
 
@@ -30,6 +30,9 @@ export async function POST(request: Request) {
       await connection.rollback();
       return NextResponse.json({ error: 'This bounty is no longer open for assignment' }, { status: 400 });
     }
+
+    const STAKE: Record<string, number> = { Junior: 20, Intermediate: 40, Advanced: 80 };
+    const stakeAmount = STAKE[bounty.Experience_Level] ?? 20;
 
     // 2. Lock and fetch the student's metrics (RP + cooldown)
     const [studentRows]: any = await connection.execute(
@@ -54,15 +57,23 @@ export async function POST(request: Request) {
     // 3. Reality Check A: Verify Tier Threshold
     if (studentRp < bounty.Required_RP) {
       await connection.rollback();
-      return NextResponse.json({ 
-        error: `Tier Check Failed. This bounty requires ${bounty.Required_RP} RP, but your usable balance is ${studentRp} RP.` 
+      return NextResponse.json({
+        error: `Tier Check Failed. This bounty requires ${bounty.Required_RP} RP, but your usable balance is ${studentRp} RP.`
+      }, { status: 403 });
+    }
+
+    // 3b. Verify the student has enough RP to cover the stake
+    if (studentRp < stakeAmount) {
+      await connection.rollback();
+      return NextResponse.json({
+        error: `Insufficient RP. Claiming this ${bounty.Experience_Level} bounty stakes ${stakeAmount} RP, but you only have ${studentRp} RP available.`
       }, { status: 403 });
     }
 
     // 4. Reality Check B: Verify Exact Skill Match
     const requiredSkill = bounty.Required_Skill.toLowerCase().trim();
     const [skillRows]: any = await connection.execute(
-      `SELECT 1 
+      `SELECT 1
        FROM Student_Course_Progress P
        JOIN Courses C ON P.Course_ID = C.Course_ID
        WHERE P.Student_ID = ? AND P.Is_Completed = 1 AND LOWER(TRIM(C.Reward_Skill)) = ?`,
@@ -71,20 +82,18 @@ export async function POST(request: Request) {
 
     if (skillRows.length === 0) {
       await connection.rollback();
-      return NextResponse.json({ 
-        error: `Skill Check Failed. You must complete a course granting the "${bounty.Required_Skill}" skill before claiming this task.` 
+      return NextResponse.json({
+        error: `Skill Check Failed. You must complete a course granting the "${bounty.Required_Skill}" skill before claiming this task.`
       }, { status: 403 });
     }
 
-    // 5. Deduct the staked RP natively from the student's available pool
-    if (bounty.Required_RP > 0) {
-      await connection.execute(
-        `UPDATE Student_Metrics 
-         SET Available_Rep_Points = Available_Rep_Points - ? 
-         WHERE Student_ID = ?`,
-        [bounty.Required_RP, studentId]
-      );
-    }
+    // 5. Deduct the staked RP from the student's available pool
+    await connection.execute(
+      `UPDATE Student_Metrics
+       SET Available_Rep_Points = Available_Rep_Points - ?
+       WHERE Student_ID = ?`,
+      [stakeAmount, studentId]
+    );
 
     // 6. Assign the bounty to the student and update status
     await connection.execute(

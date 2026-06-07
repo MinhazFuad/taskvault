@@ -10,8 +10,8 @@ export async function GET() {
           SM.Available_Rep_Points,
           SM.Total_Bounties_Completed,
           CASE 
-            WHEN SM.Available_Rep_Points >= 801 THEN 'Advanced'
-            WHEN SM.Available_Rep_Points >= 301 THEN 'Intermediate'
+            WHEN SM.Available_Rep_Points >= 1001 THEN 'Advanced'
+            WHEN SM.Available_Rep_Points >= 401 THEN 'Intermediate'
             ELSE 'Junior'
           END AS Skill_Level
        FROM Users U

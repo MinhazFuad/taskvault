@@ -90,6 +90,7 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
               {role === 'Admin' && (
                 <>
                   <Link href="/dashboard/admin/users" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Manage Users</Link>
+                  <Link href="/dashboard/admin/applications" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Applications</Link>
                 </>
               )}
             </div>

@@ -98,7 +98,7 @@ export default function AdminDashboard() {
     <div className="flex items-center justify-center h-64 text-red-400 font-bold">{error}</div>
   );
 
-  const { userStats: u, bountyStats: b, courseStats: c, recentUsers } = data;
+  const { userStats: u, bountyStats: b, courseStats: c, recentUsers, appStats: a } = data;
 
   // ── derived data for charts ──────────────────────────────────────────────
 
@@ -133,13 +133,24 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-extrabold mt-2 tracking-tight">Command Centre</h1>
           <p className="text-slate-400 text-sm mt-0.5">Live snapshot of the entire platform.</p>
         </div>
-        <Link
-          href="/dashboard/admin/users"
-          className="flex items-center gap-2.5 bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-red-900/30 transition-all text-sm shrink-0"
-        >
-          Manage Users
-          <span className="bg-red-500/60 px-2 py-0.5 rounded-lg text-xs font-bold">{n(u.Total_Users)}</span>
-        </Link>
+        <div className="flex gap-3 flex-wrap">
+          {n(a?.Pending_Applications) > 0 && (
+            <Link
+              href="/dashboard/admin/applications"
+              className="flex items-center gap-2.5 bg-yellow-600 hover:bg-yellow-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-yellow-900/30 transition-all text-sm shrink-0 animate-pulse"
+            >
+              🎓 Applications
+              <span className="bg-yellow-500/60 px-2 py-0.5 rounded-lg text-xs font-bold">{n(a.Pending_Applications)}</span>
+            </Link>
+          )}
+          <Link
+            href="/dashboard/admin/users"
+            className="flex items-center gap-2.5 bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-red-900/30 transition-all text-sm shrink-0"
+          >
+            Manage Users
+            <span className="bg-red-500/60 px-2 py-0.5 rounded-lg text-xs font-bold">{n(u.Total_Users)}</span>
+          </Link>
+        </div>
       </div>
 
       {/* ── 4 hero KPIs ── */}
