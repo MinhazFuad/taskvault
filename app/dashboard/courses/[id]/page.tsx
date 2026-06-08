@@ -4,8 +4,10 @@ import TopNav from '@/components/TopNav';
 import RichEditor from '@/components/RichEditor';
 import Link from 'next/link';
 
+// FIXED YOUTUBE PARSER
 function getYouTubeEmbedUrl(url: string): string | null {
   if (!url) return null;
+  if (url.includes('youtube.com/embed/')) return url;
   const short = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
   if (short) return `https://www.youtube.com/embed/${short[1]}`;
   const long = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
@@ -25,17 +27,13 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
   const [showCompletion, setShowCompletion] = useState(false);
   const [loading, setLoading]         = useState(true);
 
-  // Quiz
   const [quizSelected, setQuizSelected]   = useState<string | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState(false);
 
-  // Notes panel
   const [notesOpen, setNotesOpen]         = useState(false);
   const [notes, setNotes]                 = useState<Record<number, string>>({});
   const [noteSaveStatus, setNoteSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const noteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // ── Load ─────────────────────────────────────────────────────
 
   useEffect(() => {
     const load = async () => {
@@ -72,8 +70,6 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
     load();
   }, [courseId]);
 
-  // ── Reset quiz + fetch notes on module change ─────────────────
-
   useEffect(() => {
     if (!activeModule || !userId) return;
     setQuizSelected(null);
@@ -88,8 +84,6 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
       .then(j => { if (j.success) setNotes(prev => ({ ...prev, [mid]: j.content ?? '' })); })
       .catch(() => {});
   }, [activeModule?.Module_ID, userId]);
-
-  // ── Notes auto-save ──────────────────────────────────────────
 
   const handleNoteChange = (json: string) => {
     const mid = activeModule?.Module_ID;
@@ -111,8 +105,6 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
       }
     }, 1500);
   };
-
-  // ── Mark complete ─────────────────────────────────────────────
 
   const handleMarkComplete = async () => {
     if (!userId || !activeModule || !courseData) return;
@@ -141,8 +133,6 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
       setIsMarking(false);
     }
   };
-
-  // ── Guards ────────────────────────────────────────────────────
 
   if (loading) return (
     <div className="min-h-screen bg-slate-900 flex flex-col">
@@ -188,7 +178,6 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
     <div className="min-h-screen bg-slate-900 text-white flex flex-col">
       <TopNav role="Student" />
 
-      {/* ── Completion Overlay ── */}
       {showCompletion && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
           <div className="relative bg-slate-800 border border-slate-600/60 rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl overflow-hidden"
@@ -214,14 +203,11 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
         </div>
       )}
 
-      {/* ── Notes Backdrop (mobile) ── */}
       {notesOpen && (
         <div className="fixed inset-0 z-[59] bg-black/50 sm:hidden" onClick={() => setNotesOpen(false)} />
       )}
 
-      {/* ── Notes Panel (right drawer) ── */}
       <div className={`fixed inset-y-0 right-0 z-[60] w-full sm:w-[420px] bg-slate-900 border-l border-slate-700/60 flex flex-col shadow-2xl shadow-black/40 transition-transform duration-300 ease-in-out ${notesOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-        {/* Panel header */}
         <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-700/60 bg-slate-900">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-amber-500/15 border border-amber-500/25 rounded-lg flex items-center justify-center text-base">📝</div>
@@ -245,7 +231,6 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
           </div>
         </div>
 
-        {/* Editor area */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-5 h-full">
             {activeModule ? (
@@ -263,16 +248,14 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
           </div>
         </div>
 
-        {/* Panel footer */}
         <div className="shrink-0 px-5 py-3 border-t border-slate-700/60 bg-slate-900">
           <p className="text-[10px] text-slate-600">Notes auto-save per module · Rich text supported · Type <kbd className="bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-[9px] font-mono">/</kbd> for commands</p>
         </div>
       </div>
 
-      {/* ── Hero Banner ── */}
       <div className="relative h-48 w-full bg-slate-800 overflow-hidden shrink-0">
         {course.Cover_Image
-          ? <img src={course.Cover_Image} alt={course.Title} className="w-full h-full object-cover opacity-35" style={getTransformStyle() ? { transform: getTransformStyle() } : undefined} />
+          ? <img src={course.Cover_Image} alt={course.Title} className="w-full h-full object-cover opacity-35" style={getTransformStyle() ? { transform: getTransformStyle() } : undefined} onError={(e) => { e.currentTarget.src = 'https://placehold.co/1200x400/1e293b/94a3b8?text=Image+Unavailable'; e.currentTarget.style.transform = 'none'; }} />
           : <div className="w-full h-full bg-gradient-to-tr from-blue-900/40 to-purple-900/30" />}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
         <div className="absolute inset-0 flex flex-col justify-end px-6 pb-5">
@@ -289,10 +272,7 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
         </div>
       </div>
 
-      {/* ── Body ── */}
       <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
-
-        {/* ── Sidebar ── */}
         <aside className="lg:sticky lg:top-6 space-y-1.5">
           <div className="flex items-center justify-between mb-3 px-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Curriculum</span>
@@ -339,7 +319,6 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
             );
           })}
 
-          {/* Progress */}
           <div className="mt-5 bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Progress</span>
@@ -360,11 +339,8 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
           </div>
         </aside>
 
-        {/* ── Main ── */}
         <main className="min-w-0 space-y-4">
           <div className="bg-slate-800/50 border border-slate-700/40 rounded-2xl overflow-hidden">
-
-            {/* Module header */}
             <div className="px-5 py-4 border-b border-slate-700/40 flex items-center gap-3.5">
               <div className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-extrabold ${isCurrentCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-300'}`}>
                 {isCurrentCompleted ? '✓' : activeIndex + 1}
@@ -375,7 +351,6 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {quiz && <span className="text-[10px] font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-1 rounded-lg">🧠 Quiz</span>}
-                {/* Notes toggle */}
                 <button
                   onClick={() => setNotesOpen(o => !o)}
                   className={`flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg border transition-all ${
@@ -391,7 +366,6 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
 
             <div className="p-6 space-y-6">
 
-              {/* Video */}
               {embedUrl && (
                 <div className="w-full aspect-video rounded-xl overflow-hidden bg-black border border-slate-700/60 shadow-2xl">
                   <iframe key={activeModule?.Module_ID} className="w-full h-full" src={embedUrl} title={activeModule?.Title}
@@ -399,12 +373,11 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
                 </div>
               )}
               {activeModule?.Video_URL && !embedUrl && (
-                <div className="w-full aspect-video rounded-xl bg-slate-900 flex items-center justify-center border border-slate-700/60">
-                  <p className="text-slate-500 text-sm">Unsupported video format</p>
+                <div className="w-full aspect-video rounded-xl bg-slate-900 flex items-center justify-center border border-slate-700/60 p-4 text-center">
+                  <p className="text-slate-500 text-sm">Unsupported video format. The instructor provided a link that cannot be automatically embedded.</p>
                 </div>
               )}
 
-              {/* Lesson content (rich text, read-only) */}
               {activeModule?.Content && (
                 <div className="bg-slate-900/50 border border-slate-700/40 rounded-xl p-5">
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-4">Lesson Content</p>
@@ -416,7 +389,6 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
                 </div>
               )}
 
-              {/* ── Quiz ── */}
               {quiz && (
                 <div className="bg-slate-900/60 border border-purple-500/20 rounded-2xl overflow-hidden">
                   <div className="px-5 py-3.5 border-b border-purple-500/15 flex items-center gap-2.5">
@@ -479,7 +451,6 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
                 </div>
               )}
 
-              {/* Nav */}
               <div className="flex items-center justify-between pt-1 border-t border-slate-700/40 gap-3">
                 <button onClick={() => activeIndex > 0 && setActiveModule(modules[activeIndex - 1])} disabled={activeIndex === 0}
                   className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold text-slate-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed transition-colors rounded-xl hover:bg-slate-700/50">
@@ -494,7 +465,7 @@ export default function CourseViewer({ params }: { params: Promise<{ id: string 
                       Module Complete
                     </span>
                   ) : (
-                    <button onClick={handleMarkComplete} disabled={isMarking}
+                    <button onClick={handleMarkComplete} disabled={isMarking || (quiz && (!quizSubmitted || !isQuizCorrect))}
                       className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-colors shadow-lg shadow-emerald-900/30 flex items-center gap-2">
                       {isMarking ? <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</> : '✓ Mark as Complete'}
                     </button>
