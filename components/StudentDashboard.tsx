@@ -5,6 +5,12 @@ import Link from 'next/link';
 
 const STAKE: Record<string, number> = { Junior: 20, Intermediate: 40, Advanced: 80 };
 
+const APP_STATUS_STYLES: Record<string, string> = {
+  Pending:  'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  Accepted: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  Rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
+};
+
 function BountyCard({ bounty }: { bounty: any }) {
   const stakeRp = STAKE[bounty.Experience_Level] ?? 20;
   const daysLeft = Math.ceil((new Date(bounty.Due_Date).getTime() - Date.now()) / (1000 * 3600 * 24));
@@ -57,15 +63,17 @@ function BountyCard({ bounty }: { bounty: any }) {
 export default function StudentDashboard({ userId }: { userId: number }) {
   const [metrics, setMetrics] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
+  const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
-        const [metricsRes, coursesRes] = await Promise.all([
+        const [metricsRes, coursesRes, appsRes] = await Promise.all([
           fetch(`/api/dashboard/student?id=${userId}&t=${Date.now()}`, { cache: 'no-store' }),
           fetch(`/api/courses?userId=${userId}`),
+          fetch(`/api/bounties/apply?studentId=${userId}`),
         ]);
 
         const contentType = metricsRes.headers.get('content-type');
@@ -77,7 +85,12 @@ export default function StudentDashboard({ userId }: { userId: number }) {
 
         const coursesJson = await coursesRes.json();
         if (coursesJson.success) {
-          setCourses(coursesJson.data.filter((c: any) => !c.Is_Completed).slice(0, 3));
+          setCourses(coursesJson.data.filter((c: any) => !c.Is_Completed));
+        }
+
+        if (appsRes.ok) {
+          const appsJson = await appsRes.json();
+          if (appsJson.success) setApplications(appsJson.data || []);
         }
       } catch (err: any) {
         setError(err.message);
@@ -111,6 +124,11 @@ export default function StudentDashboard({ userId }: { userId: number }) {
     Advanced: 'text-purple-400', Intermediate: 'text-blue-400', Junior: 'text-emerald-400',
   };
   const tier = metrics?.Skill_Level || 'Junior';
+
+  // Course buckets for sidebar widgets
+  const continueCourse  = courses.find((c: any) => c.Completed_Modules > 0) || null;
+  const learnNextCourse = courses.find((c: any) => c.Completed_Modules === 0) || null;
+  const earnMoreCourses = courses.filter((c: any) => c.Completed_Modules === 0).slice(0, 3);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 text-white">
@@ -221,7 +239,7 @@ export default function StudentDashboard({ userId }: { userId: number }) {
       {/* ── MAIN CONTENT ─────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-        {/* LEFT — Bounties (2/3) */}
+        {/* LEFT — Bounties + Applications (2/3) */}
         <div className="lg:col-span-2 space-y-5">
 
           {/* In Progress */}
@@ -282,23 +300,159 @@ export default function StudentDashboard({ userId }: { userId: number }) {
               </div>
             )}
           </section>
+
+          {/* Your Applications */}
+          <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2 h-2 bg-violet-400 rounded-full animate-pulse block"></span>
+                <h2 className="font-bold text-white">Your Applications</h2>
+                <span className="text-xs bg-violet-500/10 text-violet-400 border border-violet-500/20 px-2 py-0.5 rounded-full font-bold">
+                  {applications.length}
+                </span>
+              </div>
+              {applications.length > 3 && (
+                <Link href="/dashboard/my-bounties" className="text-xs text-slate-400 hover:text-white transition-colors font-medium">
+                  View all →
+                </Link>
+              )}
+            </div>
+
+            {applications.length === 0 ? (
+              <div className="border border-dashed border-slate-700/50 rounded-xl p-6 text-center space-y-1.5">
+                <p className="text-slate-400 text-sm font-semibold">No applications yet</p>
+                <p className="text-slate-600 text-xs">Browse the bounty board and apply to projects that match your skills.</p>
+                <Link href="/dashboard/bounties" className="text-blue-400 text-xs font-bold hover:underline inline-block pt-1.5">
+                  Browse Bounties →
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {applications.slice(0, 4).map((app: any) => (
+                  <div key={app.Application_ID} className="bg-slate-900/60 border border-slate-700/80 rounded-xl p-3.5 space-y-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">{app.Company_Name}</p>
+                        <p className="text-sm font-bold text-white mt-0.5 leading-snug line-clamp-2">{app.Title}</p>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 ${APP_STATUS_STYLES[app.Status] || APP_STATUS_STYLES.Pending}`}>
+                        {app.Status}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-emerald-400 font-extrabold text-xs">${parseFloat(app.Reward_Amount).toFixed(0)}</p>
+                      <p className="text-slate-600 text-[10px]">
+                        {new Date(app.Applied_At).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </p>
+                    </div>
+                    {app.Status === 'Accepted' && (
+                      <Link
+                        href="/dashboard/my-bounties"
+                        className="block w-full text-center text-[10px] font-bold bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 py-1.5 rounded-lg transition-all"
+                      >
+                        Go to Work Studio →
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
 
         {/* RIGHT — Sidebar (1/3) */}
         <div className="space-y-5">
 
-          {/* Earn More RP */}
-          <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-bold text-white">Earn More RP</h2>
-              <Link href="/dashboard/courses" className="text-xs text-slate-400 hover:text-white transition-colors font-medium">
-                All courses →
+          {/* Continue Learning / Learn Next */}
+          {continueCourse ? (
+            <section className="bg-slate-800/50 border border-blue-500/20 rounded-2xl p-5 shadow-xl space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse block"></span>
+                <h2 className="font-bold text-white text-sm">Continue Learning</h2>
+              </div>
+              <Link
+                href={`/dashboard/courses/${continueCourse.Course_ID}`}
+                className="block bg-slate-900/60 border border-slate-700 hover:border-blue-500/40 rounded-xl p-3.5 transition-all group space-y-2.5"
+              >
+                <p className="text-white text-sm font-semibold group-hover:text-blue-300 transition-colors leading-snug">
+                  {continueCourse.Title}
+                </p>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px] text-slate-500">
+                    <span>{continueCourse.Completed_Modules} / {continueCourse.Total_Modules} modules</span>
+                    <span>{Math.round((continueCourse.Completed_Modules / continueCourse.Total_Modules) * 100)}%</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 rounded-full transition-all"
+                      style={{ width: `${Math.round((continueCourse.Completed_Modules / continueCourse.Total_Modules) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 text-[10px]">{continueCourse.Reward_Skill}</span>
+                  <span className="bg-blue-500/10 border border-blue-500/20 text-blue-400 font-extrabold text-[10px] px-2 py-0.5 rounded-lg">
+                    +{continueCourse.Reward_RP} RP
+                  </span>
+                </div>
               </Link>
+              <Link
+                href={`/dashboard/courses/${continueCourse.Course_ID}`}
+                className="block w-full text-center text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-xl transition-all"
+              >
+                Resume Course →
+              </Link>
+            </section>
+          ) : learnNextCourse ? (
+            <section className="bg-slate-800/50 border border-emerald-500/20 rounded-2xl p-5 shadow-xl space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-emerald-400 rounded-full block"></span>
+                <h2 className="font-bold text-white text-sm">Learn Next</h2>
+              </div>
+              <Link
+                href={`/dashboard/courses/${learnNextCourse.Course_ID}`}
+                className="block bg-slate-900/60 border border-slate-700 hover:border-emerald-500/40 rounded-xl p-3.5 transition-all group space-y-2"
+              >
+                <p className="text-white text-sm font-semibold group-hover:text-emerald-300 transition-colors leading-snug">
+                  {learnNextCourse.Title}
+                </p>
+                <p className="text-slate-500 text-[10px]">
+                  {learnNextCourse.Total_Modules} modules · {learnNextCourse.Reward_Skill}
+                </p>
+                <div className="flex items-center justify-between pt-0.5">
+                  <span className="text-slate-600 text-[10px]">Not started</span>
+                  <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-extrabold text-[10px] px-2 py-0.5 rounded-lg">
+                    +{learnNextCourse.Reward_RP} RP
+                  </span>
+                </div>
+              </Link>
+              <Link
+                href={`/dashboard/courses/${learnNextCourse.Course_ID}`}
+                className="block w-full text-center text-xs font-bold bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 py-2 rounded-xl transition-all"
+              >
+                Start Learning →
+              </Link>
+            </section>
+          ) : (
+            <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 shadow-xl text-center space-y-1.5">
+              <p className="text-2xl">🏆</p>
+              <p className="text-white font-bold text-sm">All Courses Complete!</p>
+              <p className="text-slate-500 text-xs">You've finished every available course. Check back later for new content.</p>
             </div>
+          )}
 
-            {courses.length > 0 ? (
+          {/* Earn More RP */}
+          {earnMoreCourses.length > 0 && (
+            <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-bold text-white">Earn More RP</h2>
+                <Link href="/dashboard/courses" className="text-xs text-slate-400 hover:text-white transition-colors font-medium">
+                  All courses →
+                </Link>
+              </div>
+
               <div className="space-y-2.5">
-                {courses.map((course: any) => (
+                {earnMoreCourses.map((course: any) => (
                   <Link
                     key={course.Course_ID}
                     href={`/dashboard/courses/${course.Course_ID}`}
@@ -318,23 +472,19 @@ export default function StudentDashboard({ userId }: { userId: number }) {
                   </Link>
                 ))}
               </div>
-            ) : (
-              <p className="text-slate-500 text-sm text-center py-3">
-                All available courses completed!
-              </p>
-            )}
 
-            {/* RP mechanics cheatsheet */}
-            <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-3.5 space-y-2">
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">How RP works</p>
-              <ul className="space-y-1.5 text-[11px] text-slate-400 leading-relaxed">
-                <li>📚 Complete courses → earn RP + unlock skills</li>
-                <li>⚡ Claim bounties → stake RP as commitment</li>
-                <li>✅ Approved → stake returned + speed bonus</li>
-                <li>⛔ Miss deadline → stake forfeited + −15%</li>
-              </ul>
-            </div>
-          </section>
+              {/* RP mechanics cheatsheet */}
+              <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-3.5 space-y-2">
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">How RP works</p>
+                <ul className="space-y-1.5 text-[11px] text-slate-400 leading-relaxed">
+                  <li>📚 Complete courses → earn RP + unlock skills</li>
+                  <li>⚡ Claim bounties → stake RP as commitment</li>
+                  <li>✅ Approved → stake returned + speed bonus</li>
+                  <li>⛔ Miss deadline → stake forfeited + −15%</li>
+                </ul>
+              </div>
+            </section>
+          )}
 
           {/* Instructor CTA */}
           <Link

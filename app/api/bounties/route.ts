@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   const connection = await pool.getConnection();
 
   try {
-    const { corporateUserId, title, description, rewardAmount, experienceLevel, requiredSkill, dueDate } = await request.json();
+    const { corporateUserId, title, description, repoLink, rewardAmount, experienceLevel, requiredSkill, dueDate } = await request.json();
 
     const amount = parseFloat(rewardAmount);
 
@@ -90,9 +90,9 @@ export async function POST(request: Request) {
     );
 
     await connection.execute(
-      `INSERT INTO Bounties (Corporate_User_ID, Title, Description, Reward_Amount, Experience_Level, Required_RP, Required_Skill, Due_Date, Status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Open')`,
-      [corporateUserId, title, description, amount, experienceLevel, requiredRp, requiredSkill, dueDate]
+      `INSERT INTO Bounties (Corporate_User_ID, Title, Description, Repo_Link, Reward_Amount, Experience_Level, Required_RP, Required_Skill, Due_Date, Status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Open')`,
+      [corporateUserId, title, description, repoLink || null, amount, experienceLevel, requiredRp, requiredSkill, dueDate]
     );
 
     await connection.commit();

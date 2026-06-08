@@ -91,12 +91,29 @@ export async function POST(request: Request) {
     );
 
     await connection.execute(
-      `UPDATE Student_Metrics 
+      `UPDATE Student_Metrics
        SET Available_Rep_Points = Available_Rep_Points + ?,
            Total_Bounties_Completed = Total_Bounties_Completed + 1
        WHERE Student_ID = ?`,
       [totalRpToRefund, studentId]
     );
+
+    // Notify the student that payment was released
+    const [bountyMeta]: any = await connection.execute(
+      `SELECT Title FROM Bounties WHERE Bounty_ID = ?`,
+      [bountyId]
+    );
+    if (bountyMeta.length > 0) {
+      await connection.execute(
+        `INSERT INTO Notifications (User_ID, Type, Title, Body, Link) VALUES (?, 'payment_released', ?, ?, ?)`,
+        [
+          studentId,
+          'Payment Released!',
+          `Your work on "${bountyMeta[0].Title}" was approved. $${rewardAmount.toFixed(2)} has been added to your wallet.`,
+          '/dashboard/my-bounties',
+        ]
+      );
+    }
 
     await connection.commit();
 

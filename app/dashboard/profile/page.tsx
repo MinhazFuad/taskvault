@@ -15,6 +15,15 @@ interface Course {
   Completed_At: string;
 }
 
+interface BountyReview {
+  Bounty_ID: number;
+  Title: string;
+  Company_Name: string;
+  Corporate_Rating: number;
+  Corporate_Review: string | null;
+  Completed_At: string;
+}
+
 interface ProfileData {
   Full_Name: string;
   Email: string;
@@ -33,6 +42,7 @@ interface ProfileData {
   Available_Credits: number;
   courses: Course[];
   skills: string[];
+  reviews: BountyReview[];
 }
 
 /* ──────────────────────────────────────────────
@@ -809,6 +819,66 @@ export default function ProfilePage() {
           </div>
 
         </div>
+
+        {/* ── Client Reviews ── */}
+        {profile.reviews && profile.reviews.length > 0 && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                <span className="w-1 h-4 bg-yellow-500 rounded-full inline-block" />
+                Client Reviews
+                <span className="ml-1 px-2 py-0.5 text-xs bg-slate-800 border border-slate-700 rounded-full text-slate-400">
+                  {profile.reviews.length}
+                </span>
+              </h3>
+              {/* Average */}
+              {(() => {
+                const avg = (profile.reviews.reduce((s, r) => s + r.Corporate_Rating, 0) / profile.reviews.length).toFixed(1);
+                return (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-yellow-400 text-sm font-bold">{avg}</span>
+                    <span className="text-yellow-400 text-sm">★</span>
+                    <span className="text-slate-600 text-xs">avg from {profile.reviews.length} {profile.reviews.length === 1 ? 'client' : 'clients'}</span>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="divide-y divide-slate-800/60">
+              {profile.reviews.map(review => {
+                const date = new Date(review.Completed_At).toLocaleDateString('en-US', {
+                  month: 'short', day: 'numeric', year: 'numeric',
+                });
+                return (
+                  <div key={review.Bounty_ID} className="px-6 py-4 space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-slate-300 text-sm font-semibold">{review.Company_Name}</span>
+                          <span className="text-slate-600 text-xs">·</span>
+                          <span className="text-slate-500 text-xs truncate">{review.Title}</span>
+                        </div>
+                        {/* Stars */}
+                        <div className="flex gap-0.5 mt-1">
+                          {[1, 2, 3, 4, 5].map(s => (
+                            <span key={s} className={`text-sm ${s <= review.Corporate_Rating ? 'text-yellow-400' : 'text-slate-700'}`}>★</span>
+                          ))}
+                        </div>
+                      </div>
+                      <span className="text-slate-600 text-xs shrink-0">{date}</span>
+                    </div>
+                    {review.Corporate_Review && (
+                      <blockquote className="text-slate-400 text-sm leading-relaxed italic border-l-2 border-slate-700 pl-3">
+                        "{review.Corporate_Review}"
+                      </blockquote>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
       </main>
     </div>
   );

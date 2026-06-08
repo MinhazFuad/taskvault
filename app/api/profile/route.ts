@@ -42,12 +42,23 @@ export async function GET(request: Request) {
 
     const skills = Array.from(new Set(courseRows.map((r: any) => r.Reward_Skill)));
 
+    const [reviewRows]: any = await pool.execute(
+      `SELECT B.Bounty_ID, B.Title, B.Corporate_Rating, B.Corporate_Review, B.Completed_At,
+              COALESCE(CO.Company_Name, 'Anonymous Client') AS Company_Name
+       FROM Bounties B
+       LEFT JOIN Corporate_Organizations CO ON B.Corporate_User_ID = CO.User_ID
+       WHERE B.Assigned_Student_ID = ? AND B.Status = 'Completed' AND B.Corporate_Rating IS NOT NULL
+       ORDER BY B.Completed_At DESC`,
+      [userId]
+    );
+
     return NextResponse.json({
       success: true,
       data: {
         ...userRows[0],
         courses: courseRows,
-        skills: skills
+        skills: skills,
+        reviews: reviewRows,
       }
     });
   } catch (error) {

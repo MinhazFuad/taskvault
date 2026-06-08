@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 import TopNav from '@/components/TopNav';
 
 type SortKey = 'newest' | 'highest-reward' | 'due-soonest' | 'lowest-stake';
-type FilterKey = 'all' | 'claimable' | 'locked';
+type FilterKey = 'all' | 'eligible' | 'locked';
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'newest',         label: 'Newest'         },
-  { key: 'highest-reward', label: 'Highest Reward'  },
-  { key: 'due-soonest',    label: 'Due Soonest'     },
-  { key: 'lowest-stake',   label: 'Lowest Stake'    },
+  { key: 'newest',         label: 'Newest'        },
+  { key: 'highest-reward', label: 'Highest Reward' },
+  { key: 'due-soonest',   label: 'Due Soonest'    },
+  { key: 'lowest-stake',  label: 'Lowest Stake'   },
 ];
 
 const TIER_FILTERS = ['All', 'Junior', 'Intermediate', 'Advanced'] as const;
@@ -48,27 +48,30 @@ function daysUntil(dateStr: string) {
 export default function PublicBountyBoardPage() {
   const router = useRouter();
 
-  const [userId, setUserId]           = useState<number | null>(null);
-  const [studentRp, setStudentRp]     = useState(0);
-  const [studentSkills, setStudentSkills] = useState<string[]>([]);
-  const [cooldownUntil, setCooldownUntil] = useState<Date | null>(null);
-  const [bounties, setBounties]       = useState<any[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [actionLoading, setActionLoading] = useState<number | null>(null);
-  const [claimError, setClaimError]   = useState<string | null>(null);
-  const [claimSuccess, setClaimSuccess] = useState<number | null>(null);
-  const [error, setError]             = useState<string | null>(null);
+  const [userId, setUserId]                   = useState<number | null>(null);
+  const [studentRp, setStudentRp]             = useState(0);
+  const [studentSkills, setStudentSkills]     = useState<string[]>([]);
+  const [cooldownUntil, setCooldownUntil]     = useState<Date | null>(null);
+  const [bounties, setBounties]               = useState<any[]>([]);
+  const [appliedIds, setAppliedIds]           = useState<Set<number>>(new Set());
+  const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState<string | null>(null);
+
+  // Apply modal state
+  const [applyModal, setApplyModal]           = useState<{ bountyId: number; title: string; stakeRp: number } | null>(null);
+  const [coverLetter, setCoverLetter]         = useState('');
+  const [applyLoading, setApplyLoading]       = useState(false);
+  const [applyError, setApplyError]           = useState<string | null>(null);
 
   // Controls
-  const [search, setSearch]     = useState('');
-  const [sort, setSort]         = useState<SortKey>('newest');
-  const [filter, setFilter]     = useState<FilterKey>('all');
+  const [search, setSearch]         = useState('');
+  const [sort, setSort]             = useState<SortKey>('newest');
+  const [filter, setFilter]         = useState<FilterKey>('all');
   const [tierFilter, setTierFilter] = useState<TierFilter>('All');
 
-  const loadBountyBoard = async () => {
+  const loadPage = async () => {
     try {
       setLoading(true);
-      setClaimError(null);
       const authRes  = await fetch('/api/auth/me');
       const authJson = await authRes.json();
       if (!authJson.success || authJson.user.role !== 'Student') { router.push('/dashboard'); return; }
@@ -76,9 +79,10 @@ export default function PublicBountyBoardPage() {
       const uid = authJson.user.userId;
       setUserId(uid);
 
-      const [metricsRes, bountiesRes] = await Promise.all([
+      const [metricsRes, bountiesRes, appsRes] = await Promise.all([
         fetch(`/api/dashboard/student?id=${uid}&t=${Date.now()}`, { cache: 'no-store' }),
-        fetch(`/api/bounties?status=Open&t=${Date.now()}`,         { cache: 'no-store' }),
+        fetch(`/api/bounties?status=Open&t=${Date.now()}`,        { cache: 'no-store' }),
+        fetch(`/api/bounties/apply?studentId=${uid}`,             { cache: 'no-store' }),
       ]);
 
       const metricsJson = await metricsRes.json();
@@ -92,6 +96,11 @@ export default function PublicBountyBoardPage() {
       const bountiesJson = await bountiesRes.json();
       if (bountiesJson.success) setBounties(bountiesJson.data);
       else setError(bountiesJson.error || 'Failed to load bounties');
+
+      const appsJson = await appsRes.json();
+      if (appsJson.success) {
+        setAppliedIds(new Set(appsJson.data.map((a: any) => a.Bounty_ID)));
+      }
     } catch {
       setError('Network error connecting to the bounty board.');
     } finally {
@@ -99,87 +108,75 @@ export default function PublicBountyBoardPage() {
     }
   };
 
-  useEffect(() => { loadBountyBoard(); }, [router]);
+  useEffect(() => { loadPage(); }, [router]);
 
-  const handleClaim = async (bountyId: number, requiredRp: number, requiredSkill: string, stakeRp: number) => {
-    if (!userId) return;
-    setClaimError(null);
+  const openApplyModal = (bountyId: number, title: string, stakeRp: number) => {
+    setCoverLetter('');
+    setApplyError(null);
+    setApplyModal({ bountyId, title, stakeRp });
+  };
 
-    const hasSkill = studentSkills.includes(requiredSkill.toLowerCase().trim());
-    if (studentRp < requiredRp || !hasSkill) {
-      setClaimError('You do not meet the tier and skill prerequisites for that task.');
-      return;
-    }
-    if (studentRp < stakeRp) {
-      setClaimError(`You need ${stakeRp} RP to stake on that bounty but only have ${studentRp} RP.`);
-      return;
-    }
-    if (!confirm(`Commit to this bounty? You will stake ${stakeRp} RP — returned with a bonus on approval, forfeited on deadline miss.`)) return;
-
-    setActionLoading(bountyId);
+  const handleApply = async () => {
+    if (!userId || !applyModal) return;
+    setApplyLoading(true);
+    setApplyError(null);
     try {
-      const res  = await fetch('/api/bounties/assign', {
+      const res = await fetch('/api/bounties/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bountyId, studentId: userId }),
+        body: JSON.stringify({ bountyId: applyModal.bountyId, studentId: userId, coverLetter }),
       });
       const json = await res.json();
       if (json.success) {
-        setClaimSuccess(bountyId);
-        await loadBountyBoard();
+        setAppliedIds(prev => new Set([...prev, applyModal.bountyId]));
+        setApplyModal(null);
       } else {
-        setClaimError(json.error || 'Failed to claim bounty.');
+        setApplyError(json.error || 'Failed to apply.');
       }
     } catch {
-      setClaimError('Network error processing assignment.');
+      setApplyError('Network error. Please try again.');
     } finally {
-      setActionLoading(null);
+      setApplyLoading(false);
     }
   };
 
-  const studentLevel    = getStudentLevel(studentRp);
+  const studentLevel     = getStudentLevel(studentRp);
   const cooldownDaysLeft = cooldownUntil
     ? Math.ceil((cooldownUntil.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : 0;
 
-  // Derived counts for filter tabs
   const counts = useMemo(() => {
-    const claimable = bounties.filter(b => {
+    const eligible = bounties.filter(b => {
       const stake = getStake(b.Experience_Level);
       return studentRp >= b.Required_RP &&
              studentSkills.includes(b.Required_Skill.toLowerCase().trim()) &&
              studentRp >= stake &&
              !cooldownUntil;
     }).length;
-    return { all: bounties.length, claimable, locked: bounties.length - claimable };
+    return { all: bounties.length, eligible, locked: bounties.length - eligible };
   }, [bounties, studentRp, studentSkills, cooldownUntil]);
 
   const visible = useMemo(() => {
     let list = [...bounties];
 
-    // Eligibility filter
-    if (filter === 'claimable') {
+    if (filter === 'eligible') {
       list = list.filter(b => {
         const stake = getStake(b.Experience_Level);
         return studentRp >= b.Required_RP &&
                studentSkills.includes(b.Required_Skill.toLowerCase().trim()) &&
-               studentRp >= stake &&
-               !cooldownUntil;
+               studentRp >= stake && !cooldownUntil;
       });
     } else if (filter === 'locked') {
       list = list.filter(b => {
         const stake = getStake(b.Experience_Level);
         return !(studentRp >= b.Required_RP &&
                  studentSkills.includes(b.Required_Skill.toLowerCase().trim()) &&
-                 studentRp >= stake &&
-                 !cooldownUntil);
+                 studentRp >= stake && !cooldownUntil);
       });
     }
 
-    // Tier filter
     if (tierFilter !== 'All') list = list.filter(b => b.Experience_Level === tierFilter);
 
-    // Search
     const q = search.trim().toLowerCase();
     if (q) list = list.filter(b =>
       b.Title.toLowerCase().includes(q) ||
@@ -188,19 +185,13 @@ export default function PublicBountyBoardPage() {
       b.Description.toLowerCase().includes(q)
     );
 
-    // Sort
     switch (sort) {
       case 'highest-reward':
-        list.sort((a, b) => parseFloat(b.Reward_Amount) - parseFloat(a.Reward_Amount));
-        break;
+        list.sort((a, b) => parseFloat(b.Reward_Amount) - parseFloat(a.Reward_Amount)); break;
       case 'due-soonest':
-        list.sort((a, b) => new Date(a.Due_Date).getTime() - new Date(b.Due_Date).getTime());
-        break;
+        list.sort((a, b) => new Date(a.Due_Date).getTime() - new Date(b.Due_Date).getTime()); break;
       case 'lowest-stake':
-        list.sort((a, b) => getStake(a.Experience_Level) - getStake(b.Experience_Level));
-        break;
-      default: // newest: keep server order
-        break;
+        list.sort((a, b) => getStake(a.Experience_Level) - getStake(b.Experience_Level)); break;
     }
 
     return list;
@@ -212,16 +203,69 @@ export default function PublicBountyBoardPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col text-white">
       <TopNav role="Student" />
 
+      {/* Apply modal */}
+      {applyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-lg font-bold text-white">Apply for Bounty</h3>
+                <p className="text-slate-400 text-sm mt-0.5 line-clamp-1">{applyModal.title}</p>
+              </div>
+              <button onClick={() => setApplyModal(null)} className="text-slate-500 hover:text-white text-xl leading-none transition-colors">✕</button>
+            </div>
+
+            <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg text-xs text-orange-300">
+              If selected, <strong>{applyModal.stakeRp} RP</strong> will be staked — returned with a bonus on approval.
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                Cover Letter <span className="text-slate-600 font-normal normal-case">(optional)</span>
+              </label>
+              <textarea
+                rows={4}
+                placeholder="Tell the client why you're the right fit — highlight relevant experience, skills, or your approach to this task…"
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 resize-none placeholder:text-slate-600"
+                value={coverLetter}
+                onChange={e => setCoverLetter(e.target.value)}
+              />
+            </div>
+
+            {applyError && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-xs text-red-400">{applyError}</div>
+            )}
+
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button" onClick={() => setApplyModal(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button" onClick={handleApply} disabled={applyLoading}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-lg text-sm transition-colors shadow-lg shadow-blue-500/20 flex items-center gap-2"
+              >
+                {applyLoading
+                  ? <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Submitting…</>
+                  : '📨 Submit Application'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-6">
 
-        {/* ── COOLDOWN BANNER ──────────────────────────── */}
+        {/* Cooldown banner */}
         {cooldownUntil && (
           <div className="bg-red-500/10 border border-red-500/40 rounded-2xl p-4 flex items-start gap-3">
             <span className="text-red-400 text-xl mt-0.5 shrink-0">⛔</span>
             <div>
-              <p className="font-bold text-red-400 text-sm">Bounty Claims Blocked — Penalty Cooldown Active</p>
+              <p className="font-bold text-red-400 text-sm">Applications Blocked — Penalty Cooldown Active</p>
               <p className="text-red-300/70 text-xs mt-0.5">
-                You cannot claim new bounties for{' '}
+                You cannot apply to new bounties for{' '}
                 <strong>{cooldownDaysLeft} more {cooldownDaysLeft === 1 ? 'day' : 'days'}</strong>{' '}
                 (until {cooldownUntil.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}).
               </p>
@@ -229,24 +273,15 @@ export default function PublicBountyBoardPage() {
           </div>
         )}
 
-        {/* ── CLAIM ERROR / SUCCESS ───────────────────── */}
-        {claimError && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-3.5 flex items-center justify-between gap-3">
-            <p className="text-red-400 text-sm font-semibold">{claimError}</p>
-            <button onClick={() => setClaimError(null)} className="text-red-500 hover:text-red-300 text-lg shrink-0">✕</button>
-          </div>
-        )}
-
-        {/* ── PAGE HEADER ──────────────────────────────── */}
+        {/* Page header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">Bounty Board</h1>
             <p className="text-slate-400 text-sm mt-1">
-              Corporate tasks with guaranteed payment — stake RP to commit, earn cash and bonus RP on approval.
+              Corporate tasks with guaranteed payment — apply with a cover letter, get selected, deliver, earn.
             </p>
           </div>
 
-          {/* STUDENT PROFILE CHIP */}
           {!loading && (
             <div className="flex items-center gap-3 bg-slate-800/80 border border-slate-700 rounded-2xl px-5 py-3 shrink-0">
               <div className="text-right">
@@ -265,9 +300,7 @@ export default function PublicBountyBoardPage() {
                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Skills</p>
                     <div className="flex flex-wrap gap-1 max-w-[180px]">
                       {studentSkills.slice(0, 4).map(s => (
-                        <span key={s} className="bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[9px] font-bold px-1.5 py-0.5 rounded capitalize">
-                          {s}
-                        </span>
+                        <span key={s} className="bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[9px] font-bold px-1.5 py-0.5 rounded capitalize">{s}</span>
                       ))}
                       {studentSkills.length > 4 && (
                         <span className="text-[9px] text-slate-500 font-bold px-1 py-0.5">+{studentSkills.length - 4}</span>
@@ -280,10 +313,9 @@ export default function PublicBountyBoardPage() {
           )}
         </div>
 
-        {/* ── CONTROLS ─────────────────────────────────── */}
+        {/* Controls */}
         {!loading && !error && (
           <div className="space-y-3">
-            {/* Row 1: search + sort */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1 min-w-0">
                 <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -317,14 +349,12 @@ export default function PublicBountyBoardPage() {
               </div>
             </div>
 
-            {/* Row 2: filter tabs + tier pills */}
             <div className="flex flex-wrap items-center gap-3">
-              {/* Eligibility filter tabs */}
               <div className="flex gap-1 bg-slate-900/60 border border-slate-700/60 p-1 rounded-xl">
                 {([
-                  { key: 'all' as FilterKey,      label: 'All',       count: counts.all       },
-                  { key: 'claimable' as FilterKey, label: 'Claimable', count: counts.claimable },
-                  { key: 'locked' as FilterKey,    label: 'Locked',    count: counts.locked    },
+                  { key: 'all'      as FilterKey, label: 'All',      count: counts.all      },
+                  { key: 'eligible' as FilterKey, label: 'Eligible', count: counts.eligible },
+                  { key: 'locked'   as FilterKey, label: 'Locked',   count: counts.locked   },
                 ] as const).map(tab => (
                   <button
                     key={tab.key}
@@ -343,7 +373,6 @@ export default function PublicBountyBoardPage() {
                 ))}
               </div>
 
-              {/* Tier pills */}
               <div className="flex gap-1.5 flex-wrap">
                 {TIER_FILTERS.map(t => (
                   <button
@@ -369,14 +398,10 @@ export default function PublicBountyBoardPage() {
           </div>
         )}
 
-        {/* ── ERROR ───────────────────────────────────── */}
         {error && (
-          <div className="bg-red-500/10 border border-red-500/40 rounded-2xl p-6 text-red-400 text-center font-semibold">
-            {error}
-          </div>
+          <div className="bg-red-500/10 border border-red-500/40 rounded-2xl p-6 text-red-400 text-center font-semibold">{error}</div>
         )}
 
-        {/* ── BODY ────────────────────────────────────── */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -389,29 +414,18 @@ export default function PublicBountyBoardPage() {
                   <div className="h-12 w-20 bg-slate-700/40 rounded-xl shrink-0" />
                 </div>
                 <div className="h-20 bg-slate-700/30 rounded-xl" />
-                <div className="h-2 bg-slate-700/40 rounded-full" />
                 <div className="h-11 bg-slate-700/40 rounded-xl" />
               </div>
             ))}
           </div>
         ) : !error && visible.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-            <span className="text-5xl">{search ? '🔍' : filter === 'claimable' ? '🔓' : '📋'}</span>
+            <span className="text-5xl">{search ? '🔍' : filter === 'eligible' ? '🔓' : '📋'}</span>
             <h2 className="text-lg font-bold text-white">
-              {search
-                ? `No bounties matching "${search}"`
-                : filter === 'claimable'
-                ? 'No claimable bounties right now'
-                : bounties.length === 0
-                ? 'No open bounties at the moment'
-                : 'No bounties match your filters'}
+              {search ? `No bounties matching "${search}"` : filter === 'eligible' ? 'No eligible bounties right now' : bounties.length === 0 ? 'No open bounties at the moment' : 'No bounties match your filters'}
             </h2>
             <p className="text-slate-500 text-sm max-w-xs">
-              {search
-                ? 'Try different keywords or clear your search.'
-                : filter === 'claimable'
-                ? 'Complete more courses to unlock skills and reach higher tiers.'
-                : 'Corporates post new bounties regularly — check back soon.'}
+              {search ? 'Try different keywords or clear your search.' : filter === 'eligible' ? 'Complete more courses to unlock skills.' : 'Corporates post new bounties regularly — check back soon.'}
             </p>
             {(search || filter !== 'all' || tierFilter !== 'All') && (
               <button onClick={clearFilters} className="mt-1 text-blue-400 hover:text-blue-300 text-sm font-bold hover:underline transition-colors">
@@ -431,8 +445,8 @@ export default function PublicBountyBoardPage() {
                 const meetsTier     = studentRp >= bounty.Required_RP;
                 const meetsSkill    = studentSkills.includes(bounty.Required_Skill.toLowerCase().trim());
                 const canAffordStake= studentRp >= stakeRp;
-                const isQualified   = meetsTier && meetsSkill && canAffordStake && !cooldownUntil;
-                const isLoadingThis = actionLoading === bounty.Bounty_ID;
+                const isEligible    = meetsTier && meetsSkill && canAffordStake && !cooldownUntil;
+                const hasApplied    = appliedIds.has(bounty.Bounty_ID);
                 const days          = daysUntil(bounty.Due_Date);
                 const isUrgent      = days <= 3 && days >= 0;
                 const isOverdue     = days < 0;
@@ -441,19 +455,17 @@ export default function PublicBountyBoardPage() {
                   <div
                     key={bounty.Bounty_ID}
                     className={`flex flex-col rounded-2xl border transition-all duration-200 shadow-lg ${
-                      isQualified
+                      hasApplied
+                        ? 'bg-slate-800/70 border-blue-500/30'
+                        : isEligible
                         ? 'bg-slate-800/70 border-slate-700 hover:border-blue-500/50 hover:shadow-blue-900/20'
                         : 'bg-slate-900/40 border-slate-800/60 opacity-80'
                     }`}
                   >
-                    {/* CARD HEADER */}
                     <div className="p-5 pb-4 space-y-3">
-                      {/* Company row */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2 flex-wrap min-w-0">
-                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider truncate">
-                            {bounty.Company_Name}
-                          </span>
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider truncate">{bounty.Company_Name}</span>
                           {bounty.Avg_Client_Rating ? (
                             <span className="flex items-center gap-0.5 bg-yellow-500/10 border border-yellow-500/20 px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400 shrink-0">
                               ★ {bounty.Avg_Client_Rating}
@@ -463,97 +475,53 @@ export default function PublicBountyBoardPage() {
                             <span className="text-[10px] text-slate-600 shrink-0">New client</span>
                           )}
                         </div>
-
-                        {/* Reward */}
                         <div className="bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl text-right shrink-0">
                           <p className="text-[9px] text-emerald-600 font-bold uppercase tracking-widest">Reward</p>
-                          <p className="text-lg font-extrabold text-emerald-400 leading-none">
-                            ${parseFloat(bounty.Reward_Amount).toFixed(0)}
-                          </p>
+                          <p className="text-lg font-extrabold text-emerald-400 leading-none">${parseFloat(bounty.Reward_Amount).toFixed(0)}</p>
                         </div>
                       </div>
 
-                      {/* Title */}
                       <h2 className="text-lg font-bold text-white leading-snug">{bounty.Title}</h2>
-
-                      {/* Description */}
-                      <p className="text-slate-400 text-sm leading-relaxed line-clamp-2">
-                        {bounty.Description}
-                      </p>
+                      <p className="text-slate-400 text-sm leading-relaxed line-clamp-2">{bounty.Description}</p>
                     </div>
 
-                    {/* CARD FOOTER */}
                     <div className="px-5 pb-5 mt-auto space-y-3 border-t border-slate-700/50 pt-4">
-                      {/* Tags row */}
                       <div className="flex flex-wrap items-center gap-2">
-                        {/* Skill */}
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-lg border ${
-                          meetsSkill
-                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                            : 'bg-red-500/10 text-red-400 border-red-500/20'
-                        }`}>
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded-lg border ${meetsSkill ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                           {meetsSkill ? '✓' : '✕'} {bounty.Required_Skill}
                         </span>
-
-                        {/* Tier */}
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-lg border ${
-                          meetsTier ? TIER_BADGE[bounty.Experience_Level] : 'bg-red-500/10 text-red-400 border-red-500/20'
-                        }`}>
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded-lg border ${meetsTier ? TIER_BADGE[bounty.Experience_Level] : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                           {bounty.Experience_Level}
                         </span>
-
-                        {/* Stake */}
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-lg border ${
-                          canAffordStake
-                            ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
-                            : 'bg-red-500/10 text-red-400 border-red-500/20'
-                        }`}>
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded-lg border ${canAffordStake ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                           Stakes {stakeRp} RP
                         </span>
-
-                        {/* Deadline */}
                         <span className={`text-[10px] font-bold px-2 py-1 rounded-lg border ml-auto ${
-                          isOverdue
-                            ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                            : isUrgent
-                            ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                            : 'bg-slate-800/60 text-slate-400 border-slate-700'
+                          isOverdue ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                          : isUrgent ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                          : 'bg-slate-800/60 text-slate-400 border-slate-700'
                         }`}>
                           {isOverdue ? 'Overdue' : `${days}d left`}
                         </span>
                       </div>
 
-                      {/* CTA */}
-                      {isQualified ? (
+                      {hasApplied ? (
+                        <div className="w-full bg-blue-500/10 border border-blue-500/30 rounded-xl py-2.5 px-4 flex items-center justify-center gap-2 text-blue-400 text-sm font-semibold">
+                          ✓ Application Submitted
+                        </div>
+                      ) : isEligible ? (
                         <button
-                          onClick={() => handleClaim(bounty.Bounty_ID, bounty.Required_RP, bounty.Required_Skill, stakeRp)}
-                          disabled={isLoadingThis}
-                          className="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-blue-900/30 disabled:opacity-50 text-sm flex items-center justify-center gap-2"
+                          onClick={() => openApplyModal(bounty.Bounty_ID, bounty.Title, stakeRp)}
+                          className="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-blue-900/30 text-sm flex items-center justify-center gap-2"
                         >
-                          {isLoadingThis
-                            ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Claiming…</>
-                            : <>⚡ Claim Bounty — Stakes {stakeRp} RP</>}
+                          📨 Apply for Bounty
                         </button>
                       ) : (
                         <div className="w-full bg-slate-900/60 border border-slate-700/60 rounded-xl py-2.5 px-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 cursor-not-allowed">
-                          {cooldownUntil && (
-                            <span className="text-red-400 text-xs font-semibold">⛔ Cooldown — {cooldownDaysLeft}d left</span>
-                          )}
-                          {!cooldownUntil && !meetsTier && (
-                            <span className="text-slate-500 text-xs font-semibold">
-                              🔒 Need {bounty.Experience_Level} Tier ({bounty.Required_RP}+ RP)
-                            </span>
-                          )}
-                          {!cooldownUntil && !meetsSkill && (
-                            <span className="text-slate-500 text-xs font-semibold">
-                              🔒 Missing skill: {bounty.Required_Skill}
-                            </span>
-                          )}
-                          {!cooldownUntil && meetsTier && meetsSkill && !canAffordStake && (
-                            <span className="text-slate-500 text-xs font-semibold">
-                              🔒 Need {stakeRp} RP to stake
-                            </span>
-                          )}
+                          {cooldownUntil && <span className="text-red-400 text-xs font-semibold">⛔ Cooldown — {cooldownDaysLeft}d left</span>}
+                          {!cooldownUntil && !meetsTier && <span className="text-slate-500 text-xs font-semibold">🔒 Need {bounty.Experience_Level} Tier</span>}
+                          {!cooldownUntil && !meetsSkill && <span className="text-slate-500 text-xs font-semibold">🔒 Missing skill: {bounty.Required_Skill}</span>}
+                          {!cooldownUntil && meetsTier && meetsSkill && !canAffordStake && <span className="text-slate-500 text-xs font-semibold">🔒 Need {stakeRp} RP to stake</span>}
                         </div>
                       )}
                     </div>

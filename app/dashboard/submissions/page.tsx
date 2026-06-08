@@ -29,6 +29,12 @@ const RATING_LABELS: Record<number, string> = {
   1: 'Poor', 2: 'Below Average', 3: 'Average', 4: 'Good', 5: 'Excellent',
 };
 
+const TIER_BADGE: Record<string, string> = {
+  Advanced:     'bg-purple-500/10 text-purple-400 border-purple-500/25',
+  Intermediate: 'bg-blue-500/10 text-blue-400 border-blue-500/25',
+  Junior:       'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+};
+
 export default function ReviewStudioPage() {
   const router = useRouter();
   const [userId,        setUserId]        = useState<number | null>(null);
@@ -36,6 +42,13 @@ export default function ReviewStudioPage() {
   const [loading,       setLoading]       = useState(true);
   const [error,         setError]         = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+
+  // Hiring queue
+  const [hiringQueue,     setHiringQueue]     = useState<any[]>([]);
+  const [expandedBounty,  setExpandedBounty]  = useState<number | null>(null);
+  const [applicants,      setApplicants]      = useState<Record<number, any[]>>({});
+  const [applicantLoading,setApplicantLoading]= useState<number | null>(null);
+  const [acceptLoading,   setAcceptLoading]   = useState<number | null>(null);
 
   const [ratingModal, setRatingModal] = useState<{
     bountyId: number; amount: string; studentName: string;
@@ -50,14 +63,59 @@ export default function ReviewStudioPage() {
       if (!auth.success || auth.user.role !== 'Corporate') { router.push('/dashboard'); return; }
       const uid = auth.user.userId;
       setUserId(uid);
-      const res  = await fetch(`/api/dashboard/corporate?id=${uid}&t=${Date.now()}`, { cache: 'no-store' });
-      const json = await res.json();
+
+      const [corpRes, queueRes] = await Promise.all([
+        fetch(`/api/dashboard/corporate?id=${uid}&t=${Date.now()}`, { cache: 'no-store' }),
+        fetch(`/api/bounties/hiring-queue?corporateUserId=${uid}`,  { cache: 'no-store' }),
+      ]);
+
+      const json = await corpRes.json();
       if (json.success) setBounties(json.data.bounties || []);
       else setError(json.error || 'Failed to load review queue');
+
+      const queueJson = await queueRes.json();
+      if (queueJson.success) setHiringQueue(queueJson.data || []);
     } catch {
       setError('Network connection error.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleBounty = async (bountyId: number) => {
+    if (expandedBounty === bountyId) { setExpandedBounty(null); return; }
+    setExpandedBounty(bountyId);
+    if (applicants[bountyId]) return; // already loaded
+    if (!userId) return;
+    setApplicantLoading(bountyId);
+    try {
+      const res  = await fetch(`/api/bounties/${bountyId}/applications?corporateUserId=${userId}`);
+      const json = await res.json();
+      if (json.success) setApplicants(prev => ({ ...prev, [bountyId]: json.data }));
+    } catch { /* silent */ }
+    finally { setApplicantLoading(null); }
+  };
+
+  const handleAccept = async (applicationId: number, bountyId: number, studentId: number) => {
+    if (!userId) return;
+    setAcceptLoading(applicationId);
+    try {
+      const res  = await fetch('/api/bounties/applications/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId, bountyId, studentId, corporateUserId: userId }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setExpandedBounty(null);
+        await fetchData();
+      } else {
+        alert(json.error || 'Failed to select candidate.');
+      }
+    } catch {
+      alert('Network error. Please try again.');
+    } finally {
+      setAcceptLoading(null);
     }
   };
 
@@ -174,11 +232,9 @@ export default function ReviewStudioPage() {
           </div>
 
           {/* Status summary */}
-          <div className="flex gap-3 shrink-0">
+          <div className="flex gap-3 shrink-0 flex-wrap">
             <div className={`px-4 py-2.5 rounded-xl border text-center min-w-[90px] ${
-              pendingReviews.length > 0
-                ? 'bg-orange-500/10 border-orange-500/30'
-                : 'bg-slate-900 border-slate-800'
+              pendingReviews.length > 0 ? 'bg-orange-500/10 border-orange-500/30' : 'bg-slate-900 border-slate-800'
             }`}>
               <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Needs Review</p>
               <p className={`text-2xl font-bold ${pendingReviews.length > 0 ? 'text-orange-400' : 'text-slate-600'}`}>
@@ -189,6 +245,14 @@ export default function ReviewStudioPage() {
               <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">In Progress</p>
               <p className="text-2xl font-bold text-blue-400">{inProgress.length}</p>
             </div>
+            {hiringQueue.length > 0 && (
+              <div className="px-4 py-2.5 rounded-xl border bg-blue-500/5 border-blue-500/30 text-center min-w-[90px]">
+                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Applications</p>
+                <p className="text-2xl font-bold text-blue-400">
+                  {hiringQueue.reduce((s: number, b: any) => s + parseInt(b.Application_Count), 0)}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -198,7 +262,7 @@ export default function ReviewStudioPage() {
 
         {loading ? (
           <div className="text-slate-500 py-16 text-center animate-pulse text-sm">Loading review queue…</div>
-        ) : bounties.length === 0 ? (
+        ) : bounties.length === 0 && hiringQueue.length === 0 ? (
           <div className="bg-slate-900 border border-dashed border-slate-800 rounded-2xl p-14 text-center space-y-2">
             <p className="text-lg font-semibold text-slate-400">Review queue is empty.</p>
             <p className="text-slate-500 text-sm">No tasks are currently assigned or submitted.</p>
@@ -206,6 +270,141 @@ export default function ReviewStudioPage() {
           </div>
         ) : (
           <div className="space-y-10">
+
+            {/* ── Hiring Queue ── */}
+            {hiringQueue.length > 0 && (
+              <section className="space-y-4">
+                <h2 className="text-base font-bold text-blue-300 flex items-center gap-2 pb-2 border-b border-slate-800">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
+                  Hiring Queue
+                  <span className="text-sm font-normal text-slate-500">— select a candidate for each open bounty</span>
+                </h2>
+
+                <div className="space-y-3">
+                  {hiringQueue.map((hb: any) => {
+                    const isExpanded = expandedBounty === hb.Bounty_ID;
+                    const isLoadingApps = applicantLoading === hb.Bounty_ID;
+                    const appList = applicants[hb.Bounty_ID] || [];
+
+                    return (
+                      <div key={hb.Bounty_ID} className="bg-slate-900 border border-blue-500/20 rounded-2xl overflow-hidden">
+                        {/* Bounty header — click to expand */}
+                        <button
+                          type="button"
+                          onClick={() => toggleBounty(hb.Bounty_ID)}
+                          className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-800/50 transition-colors text-left"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className={`shrink-0 text-xs font-bold px-2.5 py-1 rounded-lg border ${TIER_BADGE[hb.Experience_Level] || ''}`}>
+                              {hb.Experience_Level}
+                            </span>
+                            <div className="min-w-0">
+                              <h3 className="font-semibold text-white text-sm leading-snug truncate">{hb.Title}</h3>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                ${parseFloat(hb.Reward_Amount).toFixed(0)} reward · {hb.Required_Skill}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0 ml-4">
+                            <span className="bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs font-bold px-2.5 py-1 rounded-lg">
+                              {hb.Application_Count} {parseInt(hb.Application_Count) === 1 ? 'applicant' : 'applicants'}
+                            </span>
+                            <svg
+                              className={`w-4 h-4 text-slate-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </button>
+
+                        {/* Applicants panel */}
+                        {isExpanded && (
+                          <div className="border-t border-slate-800 p-4 space-y-3 bg-slate-900/50">
+                            {isLoadingApps ? (
+                              <div className="text-center py-6 text-slate-500 text-sm animate-pulse">Loading applicants…</div>
+                            ) : appList.length === 0 ? (
+                              <div className="text-center py-6 text-slate-600 text-sm">No pending applicants.</div>
+                            ) : (
+                              appList.map((app: any) => {
+                                const isAccepting = acceptLoading === app.Application_ID;
+                                return (
+                                  <div key={app.Application_ID} className="bg-slate-800 border border-slate-700 rounded-xl p-4 space-y-3">
+                                    {/* Applicant header row */}
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="space-y-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <p className="font-semibold text-white">{app.Full_Name}</p>
+                                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${TIER_BADGE[app.Tier] || ''}`}>
+                                            {app.Tier}
+                                          </span>
+                                        </div>
+                                        {app.Headline && <p className="text-xs text-slate-400">{app.Headline}</p>}
+                                      </div>
+
+                                      {/* Stats */}
+                                      <div className="flex items-center gap-3 shrink-0 text-xs text-slate-400 flex-wrap justify-end">
+                                        <span className="flex items-center gap-1">
+                                          <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                          </svg>
+                                          {app.Total_Bounties_Completed} completed
+                                        </span>
+                                        {app.Avg_Rating ? (
+                                          <span className="flex items-center gap-0.5 text-yellow-400 font-semibold">
+                                            ★ {parseFloat(app.Avg_Rating).toFixed(1)}
+                                            <span className="text-slate-600 font-normal">({app.Rating_Count})</span>
+                                          </span>
+                                        ) : (
+                                          <span className="text-slate-600 text-[10px]">No ratings yet</span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Verified skills */}
+                                    {app.Skills && app.Skills.length > 0 && (
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {app.Skills.map((skill: string) => (
+                                          <span key={skill} className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700 border border-slate-600 text-slate-300">
+                                            {skill}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {/* Cover letter */}
+                                    {app.Cover_Letter && (
+                                      <div className="bg-slate-900/80 border border-slate-700/60 rounded-lg px-3 py-2.5">
+                                        <p className="text-[9px] font-semibold text-slate-600 uppercase tracking-wider mb-1">Cover Letter</p>
+                                        <p className="text-xs text-slate-400 leading-relaxed whitespace-pre-line line-clamp-4">{app.Cover_Letter}</p>
+                                      </div>
+                                    )}
+
+                                    {/* Accept button */}
+                                    <div className="flex justify-end pt-1">
+                                      <button
+                                        type="button"
+                                        disabled={isAccepting}
+                                        onClick={() => handleAccept(app.Application_ID, hb.Bounty_ID, app.Student_ID)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-emerald-900/30"
+                                      >
+                                        {isAccepting
+                                          ? <><span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Selecting…</>
+                                          : '✓ Select this Candidate'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
 
             {/* ── Needs sign-off ── */}
             <section className="space-y-4">

@@ -9,16 +9,22 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     
-    const bountyIdStr = formData.get('bountyId') as string;
-    const studentIdStr = formData.get('studentId') as string;
+    const bountyIdStr    = formData.get('bountyId')     as string;
+    const studentIdStr   = formData.get('studentId')    as string;
     const submissionText = formData.get('submissionText') as string || '';
-    const file = formData.get('file') as File | null;
+    const file           = formData.get('file')          as File | null;
+    const studentRating  = parseInt(formData.get('studentRating') as string || '0');
+    const studentReview  = (formData.get('studentReview') as string || '').trim() || null;
 
-    const bountyId = parseInt(bountyIdStr);
+    const bountyId  = parseInt(bountyIdStr);
     const studentId = parseInt(studentIdStr);
 
     if (isNaN(bountyId) || isNaN(studentId)) {
       return NextResponse.json({ error: 'Missing critical identification attributes.' }, { status: 400 });
+    }
+
+    if (!studentRating || studentRating < 1 || studentRating > 5) {
+      return NextResponse.json({ error: 'A client rating (1–5 stars) is required before submitting work.' }, { status: 400 });
     }
 
     if (submissionText.trim() === '' && (!file || file.size === 0)) {
@@ -71,17 +77,40 @@ export async function POST(request: Request) {
       relativeFilePath = `/uploads/${filenameOnDisk}`;
     }
 
-    // UPDATED: Now sets Submitted_At to track exact execution duration
     await connection.execute(
-      `UPDATE Bounties 
-       SET Status = 'Under_Review', 
-           Submission_Text = ?, 
-           Submission_File_Path = ?, 
+      `UPDATE Bounties
+       SET Status = 'Under_Review',
+           Submission_Text = ?,
+           Submission_File_Path = ?,
            Submission_File_Name = ?,
-           Submitted_At = CURRENT_TIMESTAMP
+           Submitted_At = CURRENT_TIMESTAMP,
+           Student_Rating = ?,
+           Student_Review = ?
        WHERE Bounty_ID = ?`,
-      [submissionText.trim(), relativeFilePath, originalFileName, bountyId]
+      [submissionText.trim(), relativeFilePath, originalFileName, studentRating, studentReview, bountyId]
     );
+
+    // Notify the corporate that work has been submitted
+    const [bountyMeta]: any = await connection.execute(
+      `SELECT Title, Corporate_User_ID FROM Bounties WHERE Bounty_ID = ?`,
+      [bountyId]
+    );
+    if (bountyMeta.length > 0) {
+      const [studentMeta]: any = await connection.execute(
+        `SELECT Full_Name FROM Users WHERE User_ID = ?`,
+        [studentId]
+      );
+      const studentName = studentMeta[0]?.Full_Name || 'A student';
+      await connection.execute(
+        `INSERT INTO Notifications (User_ID, Type, Title, Body, Link) VALUES (?, 'submission_received', ?, ?, ?)`,
+        [
+          bountyMeta[0].Corporate_User_ID,
+          'Work Submitted — Awaiting Your Review',
+          `${studentName} submitted their work on "${bountyMeta[0].Title}". Review it in the studio.`,
+          '/dashboard/submissions',
+        ]
+      );
+    }
 
     await connection.commit();
 

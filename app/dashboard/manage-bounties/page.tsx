@@ -32,6 +32,7 @@ export default function ManageBountiesPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    repoLink: '',
     rewardAmount: '',
     experienceLevel: 'Junior',
     requiredSkill: '',
@@ -73,7 +74,7 @@ export default function ManageBountiesPage() {
       const json = await res.json();
       if (json.success) {
         setSuccess(true);
-        setFormData({ title: '', description: '', rewardAmount: '', experienceLevel: 'Junior', requiredSkill: '', dueDate: '' });
+        setFormData({ title: '', description: '', repoLink: '', rewardAmount: '', experienceLevel: 'Junior', requiredSkill: '', dueDate: '' });
         // Refresh balance
         fetch(`/api/dashboard/corporate?id=${userId}`)
           .then(r => r.json())
@@ -188,6 +189,21 @@ export default function ManageBountiesPage() {
                 value={formData.description}
                 onChange={e => setFormData({ ...formData, description: e.target.value })}
               />
+            </div>
+
+            {/* Repo / Assets Link */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-slate-300">
+                Repo / Asset Link <span className="text-slate-600 font-normal text-xs">(optional)</span>
+              </label>
+              <input
+                type="url"
+                placeholder="https://github.com/your-org/project or drive link…"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 text-sm"
+                value={formData.repoLink}
+                onChange={e => setFormData({ ...formData, repoLink: e.target.value })}
+              />
+              <p className="text-xs text-slate-600">Share a GitHub repo, Google Drive folder, or any link students need to get started.</p>
             </div>
 
             {/* Reward + Level */}
