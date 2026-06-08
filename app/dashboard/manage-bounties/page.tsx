@@ -58,9 +58,22 @@ export default function ManageBountiesPage() {
       .finally(() => setAuthLoading(false));
   }, [router]);
 
+  // Calculate today's date safely adjusted for local timezone to prevent UTC shift bugs
+  const today = new Date();
+  const minDateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  
+  // Real-time validation
+  const isDateInvalid = formData.dueDate !== '' && formData.dueDate < minDateStr;
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!userId) return;
+
+    if (isDateInvalid) {
+      setError('Please choose a valid due date in the future.');
+      return;
+    }
+
     setFormLoading(true);
     setError(null);
     setSuccess(false);
@@ -264,11 +277,20 @@ export default function ManageBountiesPage() {
                 <label className="block text-sm font-medium text-slate-300">Due Date</label>
                 <input
                   type="date" required
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 text-sm"
+                  min={minDateStr}
+                  className={`w-full bg-slate-800 border rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-1 text-sm transition-colors ${
+                    isDateInvalid 
+                      ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20' 
+                      : 'border-slate-700 focus:border-blue-500 focus:ring-blue-500/20'
+                  }`}
                   value={formData.dueDate}
                   onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
                 />
+                {isDateInvalid && (
+                  <p className="text-xs text-red-400 mt-1.5 animate-in fade-in slide-in-from-top-1">
+                    ⚠️ Please choose a valid date (today or in the future).
+                  </p>
+                )}
               </div>
             </div>
 
@@ -276,7 +298,7 @@ export default function ManageBountiesPage() {
             <div className="pt-2">
               <button
                 type="submit"
-                disabled={formLoading}
+                disabled={formLoading || isDateInvalid}
                 className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 text-sm"
               >
                 {formLoading ? (
