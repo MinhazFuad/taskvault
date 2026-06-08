@@ -25,12 +25,13 @@ function timeAgo(dateStr: string): string {
 
 export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Instructor' | 'Admin' }) {
   const router = useRouter();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [userProfile,  setUserProfile]  = useState<any>(null);
-  const [userId,       setUserId]        = useState<number | null>(null);
-  const [notifOpen,    setNotifOpen]    = useState(false);
-  const [notifications,setNotifications]= useState<any[]>([]);
-  const [unreadCount,  setUnreadCount]  = useState(0);
+  const [dropdownOpen,  setDropdownOpen]  = useState(false);
+  const [userProfile,   setUserProfile]   = useState<any>(null);
+  const [userId,        setUserId]        = useState<number | null>(null);
+  const [notifOpen,     setNotifOpen]     = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount,   setUnreadCount]   = useState(0);
+  const [msgUnread,     setMsgUnread]     = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifRef    = useRef<HTMLDivElement>(null);
 
@@ -77,6 +78,13 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
           if (notifJson.success) {
             setNotifications(notifJson.data || []);
             setUnreadCount(notifJson.unreadCount || 0);
+          }
+
+          // Load message unread count (Student + Corporate only)
+          if (['Student', 'Corporate'].includes(authJson.user.role)) {
+            const msgRes  = await fetch(`/api/messages/unread?userId=${uid}`);
+            const msgJson = await msgRes.json();
+            setMsgUnread(msgJson.count || 0);
           }
         }
       } catch (err) {
@@ -134,7 +142,14 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
                   <Link href="/dashboard/courses" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">LMS Courses</Link>
                   <Link href="/dashboard/bounties" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Bounty Board</Link>
                   <Link href="/dashboard/leaderboards" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Leaderboards</Link>
-                  {/* Profile link was moved to the avatar dropdown */}
+                  <Link href="/dashboard/messages" className="relative text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium inline-flex items-center gap-1.5">
+                    Messages
+                    {msgUnread > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 bg-blue-500 text-white text-[9px] font-black rounded-full flex items-center justify-center leading-none">
+                        {msgUnread > 9 ? '9+' : msgUnread}
+                      </span>
+                    )}
+                  </Link>
                 </>
               )}
 
@@ -143,6 +158,14 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
                   <Link href="/dashboard/manage-bounties" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Post Bounty</Link>
                   <Link href="/dashboard/bounty-history" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Bounty History</Link>
                   <Link href="/dashboard/submissions" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Review Studio</Link>
+                  <Link href="/dashboard/messages" className="relative text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium inline-flex items-center gap-1.5">
+                    Messages
+                    {msgUnread > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 bg-blue-500 text-white text-[9px] font-black rounded-full flex items-center justify-center leading-none">
+                        {msgUnread > 9 ? '9+' : msgUnread}
+                      </span>
+                    )}
+                  </Link>
                 </>
               )}
 

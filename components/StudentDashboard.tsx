@@ -50,12 +50,24 @@ function BountyCard({ bounty }: { bounty: any }) {
         </div>
       </div>
 
-      <Link
-        href="/dashboard/my-bounties"
-        className="block w-full text-center text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white py-2 rounded-lg transition-all border border-slate-700"
-      >
-        {bounty.Status === 'Assigned' ? 'Submit Work →' : 'View Status →'}
-      </Link>
+      <div className="flex gap-2">
+        <Link
+          href="/dashboard/my-bounties"
+          className="flex-1 text-center text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white py-2 rounded-lg transition-all border border-slate-700"
+        >
+          {bounty.Status === 'Assigned' ? 'Submit Work →' : 'View Status →'}
+        </Link>
+        <Link
+          href={`/dashboard/messages/${bounty.Bounty_ID}`}
+          className="flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-all border border-blue-500/20 text-xs font-bold shrink-0"
+          title="Message client"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          Chat
+        </Link>
+      </div>
     </div>
   );
 }
