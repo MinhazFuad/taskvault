@@ -28,12 +28,16 @@ export async function GET(request: Request) {
           (SELECT COUNT(*)
            FROM Bounties
            WHERE Corporate_User_ID = ? AND Student_Rating IS NOT NULL
-          ) AS Total_Client_Reviews
+          ) AS Total_Client_Reviews,
+          (SELECT COUNT(*)
+           FROM Bounties
+           WHERE Corporate_User_ID = ?
+          ) AS Total_Bounties_Posted
        FROM Users U
        JOIN Corporate_Organizations C ON U.User_ID = C.User_ID
        LEFT JOIN User_Wallets W ON U.User_ID = W.User_ID
        WHERE U.User_ID = ?`,
-      [corporateId, corporateId, corporateId, corporateId]
+      [corporateId, corporateId, corporateId, corporateId, corporateId]
     );
 
     if (userRows.length === 0) {

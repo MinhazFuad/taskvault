@@ -76,8 +76,9 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
 
               {role === 'Corporate' && (
                 <>
-                  <Link href="/dashboard/manage-bounties" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Manage Bounties</Link>
-                  <Link href="/dashboard/submissions" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Review Submissions</Link>
+                  <Link href="/dashboard/manage-bounties" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Post Bounty</Link>
+                  <Link href="/dashboard/bounty-history" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Bounty History</Link>
+                  <Link href="/dashboard/submissions" className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Review Studio</Link>
                 </>
               )}
 

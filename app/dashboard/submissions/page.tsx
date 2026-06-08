@@ -16,7 +16,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
           onMouseEnter={() => setHovered(s)}
           onMouseLeave={() => setHovered(0)}
           onClick={() => onChange(s)}
-          className={`text-3xl transition-colors ${s <= (hovered || value) ? 'text-yellow-400' : 'text-slate-600'}`}
+          className={`text-2xl transition-colors ${s <= (hovered || value) ? 'text-yellow-400' : 'text-slate-700 hover:text-slate-500'}`}
         >
           ★
         </button>
@@ -26,56 +26,42 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
 }
 
 const RATING_LABELS: Record<number, string> = {
-  1: 'Poor',
-  2: 'Below Average',
-  3: 'Average',
-  4: 'Good',
-  5: 'Excellent',
+  1: 'Poor', 2: 'Below Average', 3: 'Average', 4: 'Good', 5: 'Excellent',
 };
 
 export default function ReviewStudioPage() {
   const router = useRouter();
-  const [userId, setUserId] = useState<number | null>(null);
-  const [bounties, setBounties] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [userId,        setUserId]        = useState<number | null>(null);
+  const [bounties,      setBounties]      = useState<any[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
-  // Rating modal state
-  const [ratingModal, setRatingModal] = useState<{ bountyId: number; amount: string; studentName: string } | null>(null);
-  const [ratingValue, setRatingValue] = useState(0);
+  const [ratingModal, setRatingModal] = useState<{
+    bountyId: number; amount: string; studentName: string;
+  } | null>(null);
+  const [ratingValue,  setRatingValue]  = useState(0);
   const [ratingReview, setRatingReview] = useState('');
 
-  const fetchReviewLedger = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const authRes = await fetch('/api/auth/me');
-      const authJson = await authRes.json();
-
-      if (!authJson.success || authJson.user.role !== 'Corporate') {
-        router.push('/dashboard');
-        return;
-      }
-
-      const currentUserId = authJson.user.userId;
-      setUserId(currentUserId);
-
-      const res = await fetch(`/api/dashboard/corporate?id=${currentUserId}&t=${Date.now()}`, { cache: 'no-store' });
+      const auth = await fetch('/api/auth/me').then(r => r.json());
+      if (!auth.success || auth.user.role !== 'Corporate') { router.push('/dashboard'); return; }
+      const uid = auth.user.userId;
+      setUserId(uid);
+      const res  = await fetch(`/api/dashboard/corporate?id=${uid}&t=${Date.now()}`, { cache: 'no-store' });
       const json = await res.json();
-
-      if (json.success && json.data) {
-        setBounties(json.data.bounties || []);
-      } else {
-        setError(json.error || 'Failed to pull review ledger');
-      }
-    } catch (err: any) {
+      if (json.success) setBounties(json.data.bounties || []);
+      else setError(json.error || 'Failed to load review queue');
+    } catch {
       setError('Network connection error.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchReviewLedger(); }, [router]);
+  useEffect(() => { fetchData(); }, [router]);
 
   const openRatingModal = (bounty: any) => {
     setRatingValue(0);
@@ -85,13 +71,10 @@ export default function ReviewStudioPage() {
 
   const handleApprovePayout = async () => {
     if (!userId || !ratingModal) return;
+    if (ratingValue === 0) { alert('Please select a star rating before approving.'); return; }
 
-    if (ratingValue === 0) {
-      alert('Please select a star rating before approving.');
-      return;
-    }
-
-    setActionLoading(ratingModal.bountyId);
+    const modal = ratingModal;
+    setActionLoading(modal.bountyId);
     setRatingModal(null);
 
     try {
@@ -99,21 +82,16 @@ export default function ReviewStudioPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          bountyId: ratingModal.bountyId,
+          bountyId: modal.bountyId,
           corporateUserId: userId,
           corporateRating: ratingValue,
           corporateReview: ratingReview.trim() || null,
         }),
       });
-
       const json = await res.json();
-
-      if (json.success) {
-        await fetchReviewLedger();
-      } else {
-        alert(json.error || 'Escrow transfer failed.');
-      }
-    } catch (err) {
+      if (!json.success) alert(json.error || 'Payment release failed.');
+      await fetchData();
+    } catch {
       alert('Network error during approval.');
     } finally {
       setActionLoading(null);
@@ -121,25 +99,26 @@ export default function ReviewStudioPage() {
   };
 
   const pendingReviews = bounties.filter(b => b.Status === 'Under_Review');
+  const inProgress     = bounties.filter(b => b.Status === 'Assigned');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col text-white">
+    <div className="min-h-screen bg-slate-950 flex flex-col text-white">
       <TopNav role="Corporate" />
 
       {/* ── Rating modal ── */}
       {ratingModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-7 max-w-md w-full shadow-2xl space-y-6">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-7 max-w-md w-full shadow-2xl space-y-5">
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="text-lg font-bold text-white">Rate this Talent</h3>
+                <h3 className="text-lg font-bold text-white">Rate & Approve</h3>
                 <p className="text-slate-400 text-sm mt-0.5">{ratingModal.studentName}</p>
               </div>
               <button onClick={() => setRatingModal(null)} className="text-slate-500 hover:text-white text-xl leading-none">✕</button>
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Overall Performance</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Overall Performance</p>
               <StarPicker value={ratingValue} onChange={setRatingValue} />
               {ratingValue > 0 && (
                 <p className="text-sm font-semibold text-yellow-400">{RATING_LABELS[ratingValue]}</p>
@@ -147,10 +126,12 @@ export default function ReviewStudioPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Written Feedback (Optional)</label>
+              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                Written Feedback <span className="text-slate-600 normal-case font-normal">(optional)</span>
+              </label>
               <textarea
                 rows={3}
-                placeholder="Describe the quality of deliverables, communication, and professionalism..."
+                placeholder="Work quality, communication, professionalism…"
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 resize-none"
                 value={ratingReview}
                 onChange={e => setRatingReview(e.target.value)}
@@ -158,160 +139,184 @@ export default function ReviewStudioPage() {
             </div>
 
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
-              <p className="text-xs text-slate-400 mb-1">Releasing escrow</p>
-              <p className="text-2xl font-extrabold text-emerald-400">${parseFloat(ratingModal.amount).toFixed(2)}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">This action is permanent and cannot be undone.</p>
+              <p className="text-xs text-slate-500 mb-1">Releasing payment</p>
+              <p className="text-2xl font-bold text-emerald-400">${parseFloat(ratingModal.amount).toFixed(2)}</p>
+              <p className="text-[10px] text-slate-600 mt-0.5">This action is permanent and cannot be undone.</p>
             </div>
 
             <div className="flex gap-3">
               <button
-                type="button"
                 onClick={() => setRatingModal(null)}
-                className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all text-sm font-bold"
+                className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-semibold transition-colors"
               >
                 Cancel
               </button>
               <button
-                type="button"
                 onClick={handleApprovePayout}
                 disabled={ratingValue === 0}
-                className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-emerald-900/30"
+                className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-emerald-900/30"
               >
-                ✓ Approve & Release
+                Approve & Release
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
-        <div className="flex justify-between items-start">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 w-full py-8 space-y-8">
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
-            <Link href="/dashboard" className="text-blue-400 text-sm hover:underline mb-2 inline-block">&larr; Back to Dashboard</Link>
-            <h1 className="text-3xl font-bold tracking-tight">Review Studio</h1>
-            <p className="text-slate-400 text-sm mt-1">Audit submissions and release escrow. Your rating is saved with each approval.</p>
+            <Link href="/dashboard" className="text-blue-400 text-sm hover:underline">← Back to Dashboard</Link>
+            <h1 className="text-2xl font-bold tracking-tight mt-1">Review Studio</h1>
+            <p className="text-slate-400 text-sm mt-0.5">Review submissions and release payment to approved talent.</p>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-700 px-5 py-2.5 rounded-xl text-center">
-            <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">Awaiting Validation</span>
-            <span className="text-xl font-extrabold text-orange-400 block">{pendingReviews.length} Tasks</span>
+          {/* Status summary */}
+          <div className="flex gap-3 shrink-0">
+            <div className={`px-4 py-2.5 rounded-xl border text-center min-w-[90px] ${
+              pendingReviews.length > 0
+                ? 'bg-orange-500/10 border-orange-500/30'
+                : 'bg-slate-900 border-slate-800'
+            }`}>
+              <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Needs Review</p>
+              <p className={`text-2xl font-bold ${pendingReviews.length > 0 ? 'text-orange-400' : 'text-slate-600'}`}>
+                {pendingReviews.length}
+              </p>
+            </div>
+            <div className="px-4 py-2.5 rounded-xl border bg-slate-900 border-slate-800 text-center min-w-[90px]">
+              <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">In Progress</p>
+              <p className="text-2xl font-bold text-blue-400">{inProgress.length}</p>
+            </div>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500 text-red-400 p-4 rounded-xl text-center font-semibold text-sm">{error}</div>
+          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">{error}</div>
         )}
 
         {loading ? (
-          <div className="text-slate-400 py-16 text-center animate-pulse font-medium">Loading review queue...</div>
+          <div className="text-slate-500 py-16 text-center animate-pulse text-sm">Loading review queue…</div>
         ) : bounties.length === 0 ? (
-          <div className="bg-slate-800/40 border border-dashed border-slate-700 rounded-2xl p-12 text-center text-slate-500 space-y-2">
+          <div className="bg-slate-900 border border-dashed border-slate-800 rounded-2xl p-14 text-center space-y-2">
             <p className="text-lg font-semibold text-slate-400">Review queue is empty.</p>
-            <p className="text-sm">No tasks have been submitted for review.</p>
-            <Link href="/dashboard/manage-bounties" className="text-blue-400 text-xs font-bold hover:underline block pt-2">
-              Post New Bounties &rarr;
-            </Link>
+            <p className="text-slate-500 text-sm">No tasks are currently assigned or submitted.</p>
+            <Link href="/dashboard/manage-bounties" className="text-blue-400 text-sm hover:underline block pt-1">Post New Bounty →</Link>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-10">
 
-            {/* UNDER REVIEW */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-slate-300 flex items-center gap-2 border-b border-slate-700 pb-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
-                Requires Sign-off ({pendingReviews.length})
+            {/* ── Needs sign-off ── */}
+            <section className="space-y-4">
+              <h2 className="text-base font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-800">
+                <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse shrink-0" />
+                Requires Sign-off
+                <span className="text-sm font-normal text-slate-500">({pendingReviews.length})</span>
               </h2>
 
               {pendingReviews.length === 0 ? (
-                <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-6 text-center text-slate-500 text-xs">
-                  No deliverables waiting for sign-off.
+                <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl p-6 text-center text-slate-600 text-sm">
+                  No submissions waiting for your approval.
                 </div>
               ) : (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {pendingReviews.map(bounty => {
-                    const isLoadingThis = actionLoading === bounty.Bounty_ID;
-
+                    const isLoading = actionLoading === bounty.Bounty_ID;
                     return (
-                      <div key={bounty.Bounty_ID} className="bg-slate-800/80 backdrop-blur-sm border border-orange-500/30 rounded-2xl p-6 shadow-xl grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <div key={bounty.Bounty_ID} className="bg-slate-900 border border-orange-500/25 rounded-2xl overflow-hidden">
 
-                        {/* LEFT */}
-                        <div className="lg:col-span-2 space-y-4 flex flex-col justify-between">
-                          <div className="space-y-3">
-                            <div className="flex justify-between items-start gap-4">
-                              <div>
-                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                                  Talent: <span className="text-slate-300">{bounty.Student_Name || 'Candidate'}</span>
-                                </span>
-                                <h3 className="text-xl font-bold tracking-tight text-white">{bounty.Title}</h3>
-                              </div>
-                              <span className="bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider shrink-0">
-                                Under Review
-                              </span>
+                        {/* Card header */}
+                        <div className="px-6 py-4 border-b border-slate-800 flex items-start justify-between gap-4">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-semibold text-slate-500">Talent:</span>
+                              <span className="text-sm font-semibold text-slate-200">{bounty.Student_Name || 'Candidate'}</span>
                             </div>
+                            <h3 className="text-lg font-bold text-white">{bounty.Title}</h3>
+                          </div>
+                          <span className="shrink-0 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20 animate-pulse">
+                            Under Review
+                          </span>
+                        </div>
 
-                            <div className="space-y-2">
-                              <span className="text-xs text-slate-500 font-medium block">Brief:</span>
-                              <p className="text-slate-400 text-xs leading-relaxed whitespace-pre-line bg-slate-900/40 p-3 rounded-lg border border-slate-800 max-h-[80px] overflow-y-auto">
+                        {/* Card body: two-column */}
+                        <div className="grid grid-cols-1 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-slate-800">
+
+                          {/* Brief (left 3 cols) */}
+                          <div className="lg:col-span-3 p-5 space-y-3">
+                            <div>
+                              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Brief</p>
+                              <p className="text-slate-400 text-sm leading-relaxed line-clamp-4 whitespace-pre-line">
                                 {bounty.Description}
                               </p>
                             </div>
+
+                            <div className="flex flex-wrap gap-3 text-xs text-slate-500 pt-2 border-t border-slate-800">
+                              <span>Reward: <span className="font-bold text-emerald-400">${parseFloat(bounty.Reward_Amount).toFixed(2)}</span></span>
+                              <span className="text-slate-700">·</span>
+                              <span>RP floor: <span className="text-blue-400">{bounty.Required_RP} RP</span></span>
+                              <span className="text-slate-700">·</span>
+                              <span>Posted: {new Date(bounty.Created_At).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                            </div>
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-slate-700/60 text-xs text-slate-400 font-medium">
-                            <div><span className="text-slate-500">Escrow:</span> <span className="font-extrabold text-emerald-400">${parseFloat(bounty.Reward_Amount).toFixed(2)}</span></div>
-                            <div>•</div>
-                            <div><span className="text-slate-500">RP Floor:</span> <span className="text-blue-400">{bounty.Required_RP} RP</span></div>
-                            <div>•</div>
-                            <div><span className="text-slate-500">Posted:</span> {new Date(bounty.Created_At).toLocaleDateString()}</div>
-                          </div>
-                        </div>
+                          {/* Deliverables + action (right 2 cols) */}
+                          <div className="lg:col-span-2 p-5 flex flex-col gap-4 bg-slate-900/50">
+                            <div className="space-y-3 flex-1">
+                              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Submission</p>
 
-                        {/* RIGHT: deliverables + approve */}
-                        <div className="lg:col-span-1 bg-slate-900/90 border border-slate-700 rounded-xl p-5 flex flex-col justify-between space-y-4">
-                          <div className="space-y-3">
-                            <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider border-b border-slate-800 pb-2">
-                              Deliverables
-                            </h4>
+                              {/* Written submission */}
+                              <div>
+                                <p className="text-[9px] text-slate-600 font-semibold uppercase tracking-wider mb-1">Documentation</p>
+                                <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-300 font-mono max-h-[80px] overflow-y-auto whitespace-pre-wrap">
+                                  {bounty.Submission_Text || <span className="text-slate-600 italic">[No text provided]</span>}
+                                </div>
+                              </div>
 
-                            <div className="space-y-1">
-                              <span className="block text-[9px] text-slate-500 font-bold uppercase tracking-wider">Documentation:</span>
-                              <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-xs text-slate-300 font-mono overflow-x-auto whitespace-pre-wrap max-h-[75px]">
-                                {bounty.Submission_Text || '[No text provided]'}
+                              {/* File attachment */}
+                              <div>
+                                <p className="text-[9px] text-slate-600 font-semibold uppercase tracking-wider mb-1">Attachment</p>
+                                {bounty.Submission_File_Path ? (
+                                  <a
+                                    href={bounty.Submission_File_Path}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    download={bounty.Submission_File_Name || 'attachment'}
+                                    className="flex items-center gap-2 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 p-2.5 rounded-lg text-xs text-blue-400 font-mono transition-colors"
+                                  >
+                                    <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <span className="truncate font-semibold">{bounty.Submission_File_Name || 'Download file'}</span>
+                                  </a>
+                                ) : (
+                                  <div className="text-xs text-slate-600 italic bg-slate-950 border border-slate-800 p-2.5 rounded-lg">[No file attached]</div>
+                                )}
                               </div>
                             </div>
 
-                            <div className="space-y-1 pt-1">
-                              <span className="block text-[9px] text-slate-500 font-bold uppercase tracking-wider">Attachment:</span>
-                              {bounty.Submission_File_Path ? (
-                                <a
-                                  href={bounty.Submission_File_Path}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  download={bounty.Submission_File_Name || 'deliverable'}
-                                  className="flex items-center gap-2 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/30 p-2.5 rounded-lg text-xs text-blue-400 font-mono transition-all w-full"
-                                >
-                                  <span className="shrink-0">📥</span>
-                                  <span className="truncate font-bold">{bounty.Submission_File_Name || 'Download'}</span>
-                                </a>
-                              ) : (
-                                <div className="text-xs text-slate-600 font-mono bg-slate-950 p-2 rounded border border-slate-900 italic">[No file attached]</div>
-                              )}
+                            {/* Approve button */}
+                            <div className="space-y-1.5 pt-2 border-t border-slate-800">
+                              <button
+                                onClick={() => openRatingModal(bounty)}
+                                disabled={isLoading}
+                                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-sm transition-colors shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                              >
+                                {isLoading ? (
+                                  <>
+                                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    Processing…
+                                  </>
+                                ) : (
+                                  '★ Approve & Release Payment'
+                                )}
+                              </button>
+                              <p className="text-[9px] text-slate-600 text-center">You will rate the talent before funds are released.</p>
                             </div>
-                          </div>
-
-                          <div className="space-y-2 pt-2 border-t border-slate-800">
-                            <button
-                              onClick={() => openRatingModal(bounty)}
-                              disabled={isLoadingThis}
-                              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-xs transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                              {isLoadingThis ? (
-                                <span className="animate-pulse">Processing...</span>
-                              ) : (
-                                <span>★ Rate & Approve Payout</span>
-                              )}
-                            </button>
-                            <p className="text-[9px] text-slate-500 text-center">You will rate the talent before releasing escrow.</p>
                           </div>
                         </div>
                       </div>
@@ -319,42 +324,50 @@ export default function ReviewStudioPage() {
                   })}
                 </div>
               )}
-            </div>
+            </section>
 
-            {/* ASSIGNED (monitoring) */}
-            <div className="space-y-4 pt-6 border-t border-slate-800">
-              <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">
-                Active Commitments — Talent Working
+            {/* ── In progress (monitoring) ── */}
+            <section className="space-y-4">
+              <h2 className="text-base font-bold text-slate-500 flex items-center gap-2 pb-2 border-b border-slate-800 uppercase tracking-wider text-xs">
+                <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                Active — Talent Working
+                <span className="font-normal normal-case tracking-normal text-slate-600">({inProgress.length})</span>
               </h2>
 
-              {bounties.filter(b => b.Status === 'Assigned').length === 0 ? (
-                <div className="bg-slate-900/20 border border-slate-800/50 rounded-xl p-6 text-center text-slate-600 text-xs">
+              {inProgress.length === 0 ? (
+                <div className="bg-slate-900/30 border border-slate-800/50 rounded-xl p-6 text-center text-slate-600 text-sm">
                   No tasks currently in progress.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {bounties.filter(b => b.Status === 'Assigned').map(bounty => (
-                    <div key={bounty.Bounty_ID} className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 flex flex-col justify-between gap-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-start gap-2">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                            Candidate: <span className="text-slate-400">{bounty.Student_Name || 'Assigned'}</span>
-                          </span>
-                          <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shrink-0">
-                            In Progress
-                          </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {inProgress.map(bounty => (
+                    <div key={bounty.Bounty_ID} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col gap-3 hover:border-slate-700 transition-colors">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-xs text-slate-500 mb-0.5">
+                            Talent: <span className="text-slate-400">{bounty.Student_Name || 'Assigned'}</span>
+                          </p>
+                          <h3 className="font-semibold text-slate-200 leading-snug">{bounty.Title}</h3>
                         </div>
-                        <h3 className="font-bold text-sm text-white tracking-tight">{bounty.Title}</h3>
+                        <span className="shrink-0 px-2 py-0.5 text-[10px] font-bold rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                          In Progress
+                        </span>
                       </div>
-                      <div className="flex justify-between items-center text-xs pt-3 border-t border-slate-800 text-slate-500 font-medium">
-                        <div>Escrow: <span className="font-extrabold text-emerald-400">${parseFloat(bounty.Reward_Amount).toFixed(2)}</span></div>
-                        <div>Skill: <span className="text-blue-400">{bounty.Required_Skill}</span></div>
+                      <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-800 text-slate-500">
+                        <div className="flex items-center gap-2">
+                          <span className="text-emerald-400 font-bold">${parseFloat(bounty.Reward_Amount).toFixed(2)}</span>
+                          <span className="text-slate-700">·</span>
+                          <span>{bounty.Required_Skill}</span>
+                        </div>
+                        <span className="text-slate-600">
+                          Due {new Date(bounty.Due_Date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+            </section>
 
           </div>
         )}

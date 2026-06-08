@@ -68,7 +68,7 @@ export default function ExecutionStudioPage() {
         const cd = json.data.Cooldown_Until ? new Date(json.data.Cooldown_Until) : null;
         setCooldownUntil(cd && cd > new Date() ? cd : null);
       } else {
-        setError(json.error || 'Failed to load execution ledger');
+        setError(json.error || 'Failed to load your tasks');
       }
     } catch {
       setError('Network error connecting to Execution Studio.');
@@ -96,11 +96,11 @@ export default function ExecutionStudioPage() {
     const file = inputs?.file;
 
     if (!text && !file) {
-      alert('You must provide either written documentation or attach a deliverable file to submit.');
+      alert('Please add your notes or attach a file before submitting.');
       return;
     }
 
-    if (!confirm('Are you sure you want to submit these deliverables? Once submitted, the Corporate client will begin their review.')) return;
+    if (!confirm('Ready to submit? Once sent, the client will begin reviewing your work.')) return;
 
     setSubmittingId(bountyId);
 
@@ -115,10 +115,10 @@ export default function ExecutionStudioPage() {
       const json = await res.json();
 
       if (json.success) {
-        alert('Deliverables successfully lodged! Awaiting corporate review.');
+        alert('Submitted successfully! Awaiting client review.');
         await fetchMyBounties();
       } else {
-        alert(json.error || 'Failed to submit deliverables.');
+        alert(json.error || 'Failed to submit. Please try again.');
       }
     } catch {
       alert('A network error occurred while uploading assets.');
@@ -173,7 +173,7 @@ export default function ExecutionStudioPage() {
           <div>
             <Link href="/dashboard" className="text-blue-400 text-sm hover:underline mb-2 inline-block">&larr; Back to Dashboard</Link>
             <h1 className="text-3xl font-bold tracking-tight">Execution Studio</h1>
-            <p className="text-slate-400 text-sm mt-1">Manage your active task commitments and submit final deliverables.</p>
+            <p className="text-slate-400 text-sm mt-1">Manage your active tasks and submit your completed work.</p>
           </div>
         </div>
 
@@ -212,7 +212,7 @@ export default function ExecutionStudioPage() {
               {activeTasks.length === 0 ? (
                 <div className="bg-slate-800/40 border border-dashed border-slate-700 rounded-2xl p-12 text-center text-slate-500 space-y-2">
                   <p className="text-lg font-semibold text-slate-400">Your execution queue is clear.</p>
-                  <p className="text-sm">Claim an escrow on the Bounty Board to begin a new task.</p>
+                  <p className="text-sm">Claim a bounty on the Bounty Board to begin a new task.</p>
                   <Link href="/dashboard/bounties" className="text-blue-400 text-xs font-bold hover:underline block pt-2">
                     Browse Bounty Board &rarr;
                   </Link>
@@ -232,7 +232,7 @@ export default function ExecutionStudioPage() {
                               <h3 className="text-xl font-bold tracking-tight text-white">{bounty.Title}</h3>
                             </div>
                             <div className="text-right shrink-0">
-                              <span className="text-[10px] text-slate-500 block font-bold uppercase tracking-wider">Escrow</span>
+                              <span className="text-[10px] text-slate-500 block font-bold uppercase tracking-wider">Reward</span>
                               <span className="text-lg font-extrabold text-emerald-400 block">${parseFloat(bounty.Reward_Amount).toFixed(2)}</span>
                             </div>
                           </div>
@@ -279,7 +279,7 @@ export default function ExecutionStudioPage() {
                             {isSubmitting ? (
                               <span className="animate-pulse">Uploading Assets to Secure Vault...</span>
                             ) : (
-                              <span>🚀 Submit Final Deliverables</span>
+                              <span>🚀 Submit Your Work</span>
                             )}
                           </button>
                         </form>
@@ -310,7 +310,7 @@ export default function ExecutionStudioPage() {
                         <h3 className="font-bold text-base text-slate-300 tracking-tight">{bounty.Title}</h3>
                       </div>
                       <div className="flex justify-between items-center text-xs pt-3 border-t border-slate-800 text-slate-500 font-medium">
-                        <div>Escrow Value: <span className="font-extrabold text-emerald-400">${parseFloat(bounty.Reward_Amount).toFixed(2)}</span></div>
+                        <div>Reward: <span className="font-extrabold text-emerald-400">${parseFloat(bounty.Reward_Amount).toFixed(2)}</span></div>
                         <div>Submitted: <span className="text-slate-400">{bounty.Submitted_At ? new Date(bounty.Submitted_At).toLocaleDateString() : 'N/A'}</span></div>
                       </div>
                     </div>

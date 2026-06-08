@@ -99,7 +99,7 @@ export default function LandingPage() {
         <section className="py-24 px-6 max-w-5xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Are you a company looking for talent?</h2>
           <p className="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
-            Stop sorting through fabricated resumes. Post tasks to an escrow-backed bounty board where only proven, skill-verified talent can apply.
+            Stop sorting through fabricated resumes. Post tasks to a secure bounty board where only proven, skill-verified talent can apply.
           </p>
           <Link href="/register" className="inline-block px-8 py-4 rounded-xl bg-white text-slate-950 hover:bg-slate-200 font-bold text-lg transition-all">
             Create a Corporate Account

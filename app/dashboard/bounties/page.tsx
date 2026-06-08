@@ -242,7 +242,7 @@ export default function PublicBountyBoardPage() {
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">Bounty Board</h1>
             <p className="text-slate-400 text-sm mt-1">
-              Escrow-funded corporate tasks — stake RP to commit, earn cash and bonus RP on approval.
+              Corporate tasks with guaranteed payment — stake RP to commit, earn cash and bonus RP on approval.
             </p>
           </div>
 
