@@ -141,7 +141,7 @@ export default function ReviewStudioPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bountyId: modal.bountyId,
-          corporateUserId: userId,
+          corporateId: userId, // FIXED: Changed from corporateUserId to corporateId to match API
           corporateRating: ratingValue,
           corporateReview: ratingReview.trim() || null,
         }),

@@ -4,8 +4,9 @@ import pool from '@/lib/db';
 export async function POST(request: Request) {
   const connection = await pool.getConnection();
   try {
-    const { bountyId, corporateId } = await request.json();
+    const { bountyId, corporateId, corporateRating, corporateReview } = await request.json();
 
+    // Check for exact matching variable names
     if (!bountyId || !corporateId) return NextResponse.json({ error: 'Missing IDs' }, { status: 400 });
 
     await connection.beginTransaction();
@@ -23,10 +24,15 @@ export async function POST(request: Request) {
 
     const { Assigned_Student_ID, Reward_Amount, Required_RP } = bounty[0];
 
-    // Mark as completed and RECORD THE EXACT DATE
+    // Mark as completed, record exact date, and save the rating/review
     await connection.execute(
-      `UPDATE bounties SET Status = 'Completed', Completed_At = CURRENT_TIMESTAMP WHERE Bounty_ID = ?`,
-      [bountyId]
+      `UPDATE bounties 
+       SET Status = 'Completed', 
+           Completed_At = CURRENT_TIMESTAMP,
+           Corporate_Rating = ?,
+           Corporate_Review = ?
+       WHERE Bounty_ID = ?`,
+      [corporateRating || null, corporateReview || null, bountyId]
     );
 
     if (Assigned_Student_ID) {
@@ -38,6 +44,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     await connection.rollback();
+    console.error("Approval Error:", error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   } finally {
     connection.release();
