@@ -17,6 +17,10 @@ export async function GET(request: Request) {
           C.Verification_Status,
           W.Available_Credits AS Fiat_Balance,
           W.Escrow_Balance,
+          (SELECT COALESCE(SUM(Reward_Amount), 0)
+           FROM Bounties
+           WHERE Corporate_User_ID = ? AND Status IN ('Open', 'Assigned', 'Under_Review')
+          ) AS Funds_On_Hold,
           (SELECT COUNT(*)
            FROM Bounties
            WHERE Corporate_User_ID = ? AND Status = 'Under_Review'
@@ -37,7 +41,7 @@ export async function GET(request: Request) {
        JOIN Corporate_Organizations C ON U.User_ID = C.User_ID
        LEFT JOIN User_Wallets W ON U.User_ID = W.User_ID
        WHERE U.User_ID = ?`,
-      [corporateId, corporateId, corporateId, corporateId, corporateId]
+      [corporateId, corporateId, corporateId, corporateId, corporateId, corporateId]
     );
 
     if (userRows.length === 0) {

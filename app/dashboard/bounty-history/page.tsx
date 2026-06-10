@@ -52,7 +52,7 @@ export default function BountyHistoryPage() {
   const counts: Record<string, number> = { All: bounties.length };
   for (const b of bounties) counts[b.Status] = (counts[b.Status] || 0) + 1;
 
-  const totalReserved = bounties.filter(b => ['Open','Assigned','Under_Review'].includes(b.Status))
+  const totalReserved = bounties.filter(b => ['Open', 'Assigned', 'Under_Review'].includes(b.Status))
                                 .reduce((s, b) => s + parseFloat(b.Reward_Amount || 0), 0);
   const totalReleased = bounties.filter(b => b.Status === 'Completed')
                                 .reduce((s, b) => s + parseFloat(b.Reward_Amount || 0), 0);

@@ -287,7 +287,7 @@ export default function CorporateDashboard({ userId }: { userId: number }) {
               </div>
             </div>
             <p className="text-2xl font-bold text-orange-400">
-              ${parseFloat(data.Escrow_Balance || 0).toFixed(2)}
+              ${parseFloat(data.Funds_On_Hold || 0).toFixed(2)}
             </p>
             <p className="text-[10px] text-slate-600 mt-0.5">Reserved for active bounties</p>
           </div>
