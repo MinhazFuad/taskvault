@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+const STAKE: Record<string, number> = { Junior: 20, Intermediate: 40, Advanced: 80 };
+
 export async function POST(request: Request) {
   const connection = await pool.getConnection();
   try {
@@ -11,7 +13,7 @@ export async function POST(request: Request) {
 
     // Find all Assigned bounties past their due date for this student
     const [overdueRows]: any = await connection.execute(
-      `SELECT Bounty_ID, Corporate_User_ID, Reward_Amount
+      `SELECT Bounty_ID, Corporate_User_ID, Reward_Amount, Experience_Level
        FROM Bounties
        WHERE Assigned_Student_ID = ? AND Status = 'Assigned' AND Due_Date < CURDATE()`,
       [studentId]
@@ -22,8 +24,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, penalized: false, count: 0 });
     }
 
-    // Cancel each expired bounty and refund corporate escrow back to available
+    // Cancel each expired bounty, refund corporate escrow, and tally forfeited stake
+    let totalStakeForfeited = 0;
     for (const bounty of overdueRows) {
+      totalStakeForfeited += STAKE[bounty.Experience_Level] ?? 20;
       await connection.execute(
         `UPDATE Bounties SET Status = 'Cancelled' WHERE Bounty_ID = ?`,
         [bounty.Bounty_ID]
@@ -37,8 +41,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Apply 15% RP penalty to student's current available pool.
-    // The staked RP was already deducted at claim time and is not returned.
+    // Apply 15% RP penalty to student's available pool and clear their forfeited stake
     const [metricsRows]: any = await connection.execute(
       `SELECT Available_Rep_Points FROM Student_Metrics WHERE Student_ID = ? FOR UPDATE`,
       [studentId]
@@ -49,9 +52,10 @@ export async function POST(request: Request) {
     await connection.execute(
       `UPDATE Student_Metrics
        SET Available_Rep_Points = GREATEST(0, Available_Rep_Points - ?),
-           Cooldown_Until        = DATE_ADD(NOW(), INTERVAL 7 DAY)
+           Staked_Rep_Points    = GREATEST(0, Staked_Rep_Points    - ?),
+           Cooldown_Until       = DATE_ADD(NOW(), INTERVAL 7 DAY)
        WHERE Student_ID = ?`,
-      [penalty, studentId]
+      [penalty, totalStakeForfeited, studentId]
     );
 
     await connection.commit();

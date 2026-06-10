@@ -73,10 +73,13 @@ export async function POST(request: Request) {
       [bountyId, applicationId]
     );
 
-    // Deduct RP stake from accepted student
+    // Deduct RP stake from accepted student and move it to Staked_Rep_Points
     await connection.execute(
-      `UPDATE Student_Metrics SET Available_Rep_Points = Available_Rep_Points - ? WHERE Student_ID = ?`,
-      [stakeAmount, studentId]
+      `UPDATE Student_Metrics
+       SET Available_Rep_Points = Available_Rep_Points - ?,
+           Staked_Rep_Points    = Staked_Rep_Points    + ?
+       WHERE Student_ID = ?`,
+      [stakeAmount, stakeAmount, studentId]
     );
 
     // Assign the bounty

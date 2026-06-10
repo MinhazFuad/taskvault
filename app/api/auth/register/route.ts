@@ -22,31 +22,12 @@ export async function POST(request: Request) {
 
     await connection.beginTransaction();
 
-    const [userResult]: any = await connection.execute(
+    await connection.execute(
       `INSERT INTO Users (Full_Name, Email, Password_Hash, Role) VALUES (?, ?, ?, ?)`,
       [fullName, email, passwordHash, role]
     );
     
-    const newUserId = userResult.insertId;
-
-    await connection.execute(
-      `INSERT INTO User_Wallets (User_ID, Available_Credits) VALUES (?, 0.00)`,
-      [newUserId]
-    );
-
-    if (role === 'Student') {
-      await connection.execute(
-        `INSERT INTO Student_Metrics (Student_ID) VALUES (?)`,
-        [newUserId]
-      );
-    } else if (role === 'Corporate') {
-      const defaultCompanyName = `${fullName} Inc.`;
-      await connection.execute(
-        `INSERT INTO Corporate_Organizations (User_ID, Company_Name) VALUES (?, ?)`,
-        [newUserId, defaultCompanyName]
-      );
-    }
-
+    // trg_init_new_user trigger auto-provisions wallet, student_metrics, and corporate_organizations
     await connection.commit();
     return NextResponse.json({ message: 'User registered successfully', success: true }, { status: 201 });
 
