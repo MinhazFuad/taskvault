@@ -20,9 +20,9 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
           onMouseEnter={() => setHovered(s)}
           onMouseLeave={() => setHovered(0)}
           onClick={() => onChange(s)}
-          className={`text-2xl transition-colors ${s <= (hovered || value) ? 'text-yellow-400' : 'text-slate-700 hover:text-slate-500'}`}
+          className={`transition-colors ${s <= (hovered || value) ? 'text-yellow-400' : 'text-slate-700 hover:text-slate-500'}`}
         >
-          ★
+          <svg className="w-6 h-6 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
         </button>
       ))}
     </div>
@@ -191,7 +191,7 @@ export default function ExecutionStudioPage() {
         {/* ── Cooldown banner ── */}
         {cooldownUntil && (
           <div className="bg-red-500/10 border border-red-500/40 rounded-2xl p-5 flex items-start gap-3">
-            <span className="text-red-400 text-xl mt-0.5 shrink-0">⛔</span>
+            <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
             <div>
               <p className="font-bold text-red-400">Account on Penalty Cooldown</p>
               <p className="text-red-300/70 text-sm mt-0.5">
@@ -249,7 +249,7 @@ export default function ExecutionStudioPage() {
                             <div className="text-right shrink-0">
                               <p className="text-2xl font-extrabold text-emerald-400">${parseFloat(bounty.Reward_Amount).toFixed(0)}</p>
                               <p className={`text-xs font-bold mt-0.5 ${isOverdue ? 'text-red-400' : isUrgent ? 'text-yellow-400' : 'text-slate-500'}`}>
-                                {isOverdue ? '⚠ Overdue' : `${daysLeft}d remaining`}
+                                {isOverdue ? <span className="inline-flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>Overdue</span> : `${daysLeft}d remaining`}
                               </p>
                             </div>
                           </div>
@@ -350,7 +350,7 @@ export default function ExecutionStudioPage() {
                                 ) : form.rating === 0 ? (
                                   'Rate the client first to unlock submission'
                                 ) : (
-                                  '🚀 Submit Work for Review'
+                                  <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>Submit Work for Review</>
                                 )}
                               </button>
                             </div>
@@ -430,7 +430,7 @@ export default function ExecutionStudioPage() {
                             : isRejected ? 'bg-slate-700/40 text-slate-500 border-slate-700'
                             : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
                           }`}>
-                            {isAccepted ? 'Accepted ✓' : isRejected ? 'Not Selected' : 'Pending'}
+                            {isAccepted ? <span className="inline-flex items-center gap-1">Accepted <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg></span> : isRejected ? 'Not Selected' : 'Pending'}
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-[10px]">
@@ -449,7 +449,7 @@ export default function ExecutionStudioPage() {
             {/* ── Empty state ── */}
             {!loading && activeTasks.length === 0 && pendingReviews.length === 0 && applications.length === 0 && (
               <div className="bg-slate-900 border border-dashed border-slate-800 rounded-2xl p-16 text-center space-y-3">
-                <p className="text-3xl">🚀</p>
+                <svg className="w-12 h-12 text-slate-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
                 <p className="text-slate-400 font-semibold">Your studio is empty</p>
                 <p className="text-slate-600 text-sm">Browse the bounty board and apply to projects that match your skills.</p>
                 <Link href="/dashboard/bounties" className="text-blue-400 text-sm font-bold hover:underline block pt-1">Browse Bounty Board →</Link>

@@ -179,7 +179,7 @@ export default function AdminUsersPage() {
                 <h3 className="text-lg font-bold text-white">Edit Account</h3>
                 <p className="text-slate-400 text-sm mt-0.5">User ID #{editUser.User_ID}</p>
               </div>
-              <button onClick={() => setEditUser(null)} className="text-slate-500 hover:text-white text-xl">✕</button>
+              <button onClick={() => setEditUser(null)} className="text-slate-500 hover:text-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
 
             {editError && (
@@ -247,7 +247,7 @@ export default function AdminUsersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="bg-slate-900 border border-red-500/30 rounded-2xl p-7 max-w-sm w-full shadow-2xl space-y-5">
             <div className="text-center space-y-2">
-              <div className="text-4xl">⚠️</div>
+              <svg className="w-10 h-10 text-orange-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
               <h3 className="text-lg font-bold text-white">Delete Account?</h3>
               <p className="text-slate-400 text-sm">
                 This will permanently delete <strong className="text-white">{deleteTarget.Full_Name}</strong> and all their associated data. This cannot be undone.
@@ -256,9 +256,9 @@ export default function AdminUsersPage() {
             <div className="bg-slate-800 rounded-xl p-3 text-xs space-y-1 text-slate-400">
               <p>Role: <span className="font-bold text-white">{deleteTarget.Role}</span></p>
               <p>Email: <span className="font-mono text-slate-300">{deleteTarget.Email}</span></p>
-              {deleteTarget.Role === 'Student' && <p className="text-orange-400 font-semibold">⚠ Active bounties will be unassigned and returned to Open.</p>}
-              {deleteTarget.Role === 'Corporate' && <p className="text-orange-400 font-semibold">⚠ All posted bounties and escrow records will be deleted.</p>}
-              {deleteTarget.Role === 'Instructor' && <p className="text-orange-400 font-semibold">⚠ All courses and student progress will be deleted.</p>}
+              {deleteTarget.Role === 'Student' && <p className="text-orange-400 font-semibold flex items-start gap-1.5"><svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>Active bounties will be unassigned and returned to Open.</p>}
+              {deleteTarget.Role === 'Corporate' && <p className="text-orange-400 font-semibold flex items-start gap-1.5"><svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>All posted bounties and escrow records will be deleted.</p>}
+              {deleteTarget.Role === 'Instructor' && <p className="text-orange-400 font-semibold flex items-start gap-1.5"><svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>All courses and student progress will be deleted.</p>}
             </div>
             <div className="flex gap-3">
               <button
@@ -313,7 +313,7 @@ export default function AdminUsersPage() {
 
           {/* Search */}
           <div className="flex-1 relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">🔍</span>
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input
               type="text"
               placeholder="Search by name or email..."

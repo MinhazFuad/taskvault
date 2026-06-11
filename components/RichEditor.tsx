@@ -66,7 +66,7 @@ const ALL_CMDS: SlashCmd[] = [
     run: (e, f, t) => e.chain().focus().deleteRange({ from: f, to: t }).toggleOrderedList().run(),
   },
   {
-    title: 'To-do List', description: 'Checkable task items', icon: '☑',
+    title: 'To-do List', description: 'Checkable task items', icon: '[x]',
     keywords: ['todo', 'task', 'check', 'checkbox'],
     run: (e, f, t) => e.chain().focus().deleteRange({ from: f, to: t }).toggleTaskList().run(),
   },

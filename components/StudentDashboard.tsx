@@ -156,7 +156,8 @@ export default function StudentDashboard({ userId }: { userId: number }) {
             </span>
             {isOnCooldown && (
               <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/25">
-                ⛔ Cooldown Active
+                <svg className="w-3 h-3 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+              Cooldown Active
               </span>
             )}
           </div>
@@ -180,7 +181,7 @@ export default function StudentDashboard({ userId }: { userId: number }) {
       {/* ── COOLDOWN BANNER ──────────────────────────────── */}
       {isOnCooldown && (
         <div className="bg-red-500/10 border border-red-500/40 rounded-2xl p-4 flex items-start gap-3">
-          <span className="text-red-400 text-xl mt-0.5 shrink-0">⛔</span>
+          <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
           <div>
             <p className="font-bold text-red-400 text-sm">Penalty Cooldown Active</p>
             <p className="text-red-300/70 text-xs mt-0.5">
@@ -233,7 +234,7 @@ export default function StudentDashboard({ userId }: { userId: number }) {
             <>
               <div className="flex items-baseline gap-1.5 mt-1.5">
                 <p className="text-2xl font-extrabold text-yellow-400">{metrics.Avg_Talent_Rating}</p>
-                <p className="text-slate-500 text-xs">/ 5★</p>
+                <p className="text-slate-500 text-xs flex items-center gap-0.5">/ 5 <svg className="w-3 h-3 text-slate-500 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg></p>
               </div>
               <p className="text-[10px] text-slate-600 mt-1">
                 {metrics.Total_Talent_Reviews} review{metrics.Total_Talent_Reviews !== 1 ? 's' : ''} from clients
@@ -447,7 +448,7 @@ export default function StudentDashboard({ userId }: { userId: number }) {
             </section>
           ) : (
             <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 shadow-xl text-center space-y-1.5">
-              <p className="text-2xl">🏆</p>
+              <svg className="w-10 h-10 text-yellow-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               <p className="text-white font-bold text-sm">All Courses Complete!</p>
               <p className="text-slate-500 text-xs">You've finished every available course. Check back later for new content.</p>
             </div>
@@ -489,10 +490,10 @@ export default function StudentDashboard({ userId }: { userId: number }) {
               <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-3.5 space-y-2">
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">How RP works</p>
                 <ul className="space-y-1.5 text-[11px] text-slate-400 leading-relaxed">
-                  <li>📚 Complete courses → earn RP + unlock skills</li>
-                  <li>⚡ Claim bounties → stake RP as commitment</li>
-                  <li>✅ Approved → stake returned + speed bonus</li>
-                  <li>⛔ Miss deadline → stake forfeited + −15%</li>
+                  <li className="flex items-start gap-1.5"><svg className="w-3 h-3 text-blue-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg><span>Complete courses → earn RP + unlock skills</span></li>
+                  <li className="flex items-start gap-1.5"><svg className="w-3 h-3 text-orange-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg><span>Claim bounties → stake RP as commitment</span></li>
+                  <li className="flex items-start gap-1.5"><svg className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span>Approved → stake returned + speed bonus</span></li>
+                  <li className="flex items-start gap-1.5"><svg className="w-3 h-3 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg><span>Miss deadline → stake forfeited + −15%</span></li>
                 </ul>
               </div>
             </section>
@@ -504,7 +505,9 @@ export default function StudentDashboard({ userId }: { userId: number }) {
             className="block bg-gradient-to-br from-purple-900/30 to-slate-900/60 border border-purple-500/20 hover:border-purple-500/40 rounded-2xl p-5 shadow-xl transition-all group"
           >
             <div className="flex items-center gap-3 mb-3">
-              <span className="text-2xl">🎓</span>
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
+              </div>
               <div>
                 <h2 className="font-bold text-white group-hover:text-purple-300 transition-colors text-sm">
                   Become an Instructor
@@ -513,7 +516,7 @@ export default function StudentDashboard({ userId }: { userId: number }) {
               </div>
             </div>
             <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              <span>3,000 RP · 4.8★ required</span>
+              <span className="flex items-center gap-1">3,000 RP · 4.8 <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg> required</span>
               <span className="text-purple-400 group-hover:underline">Learn more →</span>
             </div>
           </Link>

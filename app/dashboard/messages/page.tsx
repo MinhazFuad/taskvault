@@ -61,7 +61,7 @@ export default function MessagesInboxPage() {
           <div className="text-slate-500 py-16 text-center animate-pulse text-sm">Loading conversations…</div>
         ) : conversations.length === 0 ? (
           <div className="bg-slate-900 border border-dashed border-slate-800 rounded-2xl p-14 text-center space-y-2">
-            <p className="text-3xl">💬</p>
+            <svg className="w-12 h-12 text-slate-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
             <p className="text-slate-400 font-semibold">No conversations yet</p>
             <p className="text-slate-600 text-sm">Messages from active bounties will appear here.</p>
           </div>

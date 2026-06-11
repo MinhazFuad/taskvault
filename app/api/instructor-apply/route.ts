@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     }
     if (rating < RATING_THRESHOLD) {
       return NextResponse.json({
-        error: `You need a minimum ${RATING_THRESHOLD}★ client rating to apply. Your current rating is ${rating}★.`
+        error: `You need a minimum ${RATING_THRESHOLD}/5 client rating to apply. Your current rating is ${rating}/5.`
       }, { status: 403 });
     }
 

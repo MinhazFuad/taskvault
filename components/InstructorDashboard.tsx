@@ -58,10 +58,10 @@ export default function InstructorDashboard({ userId }: { userId: number }) {
   const totalRp        = parseInt(data?.Total_RP_Awarded) || 0;
 
   const STATS = [
-    { label:  'Courses Published', value:  totalPublished, color:  'text-white', accent: 'bg-blue-500/10 border-blue-500/20', icon:   '📚' },
-    { label:  'Students Enrolled', value:  totalStudents, color:  'text-purple-400', accent: 'bg-purple-500/10 border-purple-500/20', icon:   '👥' },
-    { label:  'Total Completions', value:  totalComplete, color:  'text-emerald-400', accent: 'bg-emerald-500/10 border-emerald-500/20', icon:   '🏅' },
-    { label:  'RP Awarded', value:  totalRp.toLocaleString(), color:  'text-orange-400', accent: 'bg-orange-500/10 border-orange-500/20', icon:   '⚡' },
+    { label: 'Courses Published', value: totalPublished, color: 'text-white', accent: 'bg-blue-500/10 border-blue-500/20', icon: <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg> },
+    { label: 'Students Enrolled', value: totalStudents, color: 'text-purple-400', accent: 'bg-purple-500/10 border-purple-500/20', icon: <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+    { label: 'Total Completions', value: totalComplete, color: 'text-emerald-400', accent: 'bg-emerald-500/10 border-emerald-500/20', icon: <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+    { label: 'RP Awarded', value: totalRp.toLocaleString(), color: 'text-orange-400', accent: 'bg-orange-500/10 border-orange-500/20', icon: <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
   ];
 
   return (
@@ -80,7 +80,7 @@ export default function InstructorDashboard({ userId }: { userId: number }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {STATS.map(stat => (
           <div key={stat.label} className={`rounded-2xl border p-5 space-y-2 ${stat.accent} ${loading ? 'animate-pulse' : ''}`}>
-            <div className="flex items-center justify-between"><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{stat.label}</p><span className="text-lg">{stat.icon}</span></div>
+            <div className="flex items-center justify-between"><p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{stat.label}</p><span>{stat.icon}</span></div>
             {loading ? <div className="h-9 bg-slate-700/40 rounded-lg w-2/3" /> : <p className={`text-4xl font-extrabold ${stat.color} leading-none`}>{stat.value}</p>}
           </div>
         ))}
@@ -98,7 +98,7 @@ export default function InstructorDashboard({ userId }: { userId: number }) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>
         ) : courses.length === 0 ? (
           <div className="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-14 text-center space-y-4">
-            <span className="text-5xl block">📝</span>
+            <svg className="w-12 h-12 text-slate-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
             <div><p className="text-lg font-bold text-white">No courses yet</p><p className="text-slate-500 text-sm mt-1 max-w-xs mx-auto">Create your first course to start teaching students and awarding skills.</p></div>
             <Link href="/dashboard/create-course" className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-blue-900/30">+ Create Your First Course</Link>
           </div>
@@ -117,7 +117,7 @@ export default function InstructorDashboard({ userId }: { userId: number }) {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-widest">Live</span>
                       <span className="bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[9px] font-bold px-2 py-0.5 rounded capitalize">Skill: {c.Reward_Skill}</span>
-                      <span className="bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[9px] font-bold px-2 py-0.5 rounded">⚡ {c.Reward_RP} RP</span>
+                      <span className="bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[9px] font-bold px-2 py-0.5 rounded inline-flex items-center gap-1"><svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>{c.Reward_RP} RP</span>
                       <span className="bg-slate-900/60 border border-slate-700 text-slate-500 text-[9px] font-bold px-2 py-0.5 rounded ml-auto">{c.Total_Modules} module{c.Total_Modules !== 1 ? 's' : ''}</span>
                     </div>
                     <h3 className="text-lg font-bold text-white leading-snug group-hover:text-blue-300 transition-colors">{c.Title}</h3>

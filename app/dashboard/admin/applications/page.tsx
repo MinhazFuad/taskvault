@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import TopNav from '@/components/TopNav';
 import Link from 'next/link';
@@ -112,7 +112,7 @@ export default function AdminApplicationsPage() {
   const MODAL_CONFIG = {
     Interview_Called: {
       title: 'Call for Interview',
-      icon: '🎤',
+      icon: <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>,
       desc: 'This will notify the student that they\'ve been selected for an instructor interview. You can optionally include scheduling details.',
       btnLabel: 'Send Interview Invitation',
       btnClass: 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/30',
@@ -122,7 +122,7 @@ export default function AdminApplicationsPage() {
     },
     Email_Inquiry: {
       title: 'Send Email Inquiry',
-      icon: '📧',
+      icon: <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
       desc: 'Write a message that will be shown to the student as a follow-up inquiry. They will also be prompted to check their email inbox.',
       btnLabel: 'Send Inquiry',
       btnClass: 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/30',
@@ -132,7 +132,7 @@ export default function AdminApplicationsPage() {
     },
     Rejected: {
       title: 'Reject Application',
-      icon: '✕',
+      icon: <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
       desc: 'The student will be notified that their application was not successful. You can optionally include feedback.',
       btnLabel: 'Confirm Rejection',
       btnClass: 'bg-red-600 hover:bg-red-500 shadow-red-900/30',
@@ -154,13 +154,13 @@ export default function AdminApplicationsPage() {
             <div className="bg-slate-900 border border-slate-700 rounded-2xl p-7 max-w-lg w-full shadow-2xl space-y-5">
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{cfg.icon}</span>
+                  <span className="shrink-0">{cfg.icon}</span>
                   <div>
                     <h3 className="text-lg font-bold text-white">{cfg.title}</h3>
                     <p className="text-slate-400 text-sm mt-0.5">{modal.app.Student_Name}</p>
                   </div>
                 </div>
-                <button onClick={() => setModal(null)} className="text-slate-500 hover:text-white text-xl">✕</button>
+                <button onClick={() => setModal(null)} className="text-slate-500 hover:text-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
               </div>
 
               <p className="text-slate-400 text-sm bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">{cfg.desc}</p>
@@ -283,7 +283,7 @@ export default function AdminApplicationsPage() {
                       <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 text-center">
                         <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Avg Rating</p>
                         <p className={`text-xl font-extrabold mt-0.5 ${Number(app.Avg_Rating) >= 4.8 ? 'text-yellow-400' : 'text-red-400'}`}>
-                          {Number(app.Avg_Rating).toFixed(1)}★
+                          <span className="inline-flex items-center gap-0.5">{Number(app.Avg_Rating).toFixed(1)}<svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg></span>
                         </p>
                         <p className="text-[9px] text-slate-600 mt-0.5">{app.Rating_Count} reviews</p>
                       </div>
@@ -322,13 +322,13 @@ export default function AdminApplicationsPage() {
                         onClick={() => openModal(app, 'Interview_Called')}
                         className="flex-1 lg:flex-none bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-emerald-900/30 text-center"
                       >
-                        🎤 Call for Interview
+                        <span className="inline-flex items-center justify-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>Call for Interview</span>
                       </button>
                       <button
                         onClick={() => openModal(app, 'Email_Inquiry')}
                         className="flex-1 lg:flex-none bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-blue-900/30 text-center"
                       >
-                        📧 Email Inquiry
+                        <span className="inline-flex items-center justify-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>Email Inquiry</span>
                       </button>
                       <button
                         onClick={() => openModal(app, 'Rejected')}

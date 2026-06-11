@@ -213,7 +213,12 @@ export default function CorporateDashboard({ userId }: { userId: number }) {
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                 : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30'
             }`}>
-              {isVerified ? '✓ Verified' : data.Verification_Status}
+              {isVerified ? (
+                <span className="flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                  Verified
+                </span>
+              ) : data.Verification_Status}
             </span>
           </div>
         </div>
@@ -332,7 +337,7 @@ export default function CorporateDashboard({ userId }: { userId: number }) {
           <div className="flex items-start justify-between mb-3">
             <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Satisfaction</span>
             <div className="w-8 h-8 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center shrink-0">
-              <span className="text-yellow-400 text-sm">★</span>
+              <svg className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
             </div>
           </div>
           {data.Avg_Client_Rating ? (
@@ -343,7 +348,7 @@ export default function CorporateDashboard({ userId }: { userId: number }) {
               </div>
               <div className="flex gap-0.5 mt-1">
                 {[1,2,3,4,5].map(s => (
-                  <span key={s} className={`text-xs ${s <= Math.round(data.Avg_Client_Rating) ? 'text-yellow-400' : 'text-slate-700'}`}>★</span>
+                  <svg key={s} className={`w-3 h-3 fill-current ${s <= Math.round(data.Avg_Client_Rating) ? 'text-yellow-400' : 'text-slate-700'}`} viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                 ))}
               </div>
               <p className="text-[10px] text-slate-600 mt-1">
@@ -471,7 +476,7 @@ export default function CorporateDashboard({ userId }: { userId: number }) {
                     <h3 className="text-lg font-bold text-white">Add Funds</h3>
                     <p className="text-xs text-slate-500 mt-0.5">Funds are added to your wallet instantly</p>
                   </div>
-                  <button onClick={closeModal} className="text-slate-500 hover:text-white text-xl leading-none transition-colors">✕</button>
+                  <button onClick={closeModal} className="text-slate-500 hover:text-white leading-none transition-colors"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
                 </div>
 
                 <div className="space-y-3">
@@ -559,7 +564,7 @@ export default function CorporateDashboard({ userId }: { userId: number }) {
                       <p className="text-xs text-slate-500">Depositing <span className="text-emerald-400 font-semibold">${parseFloat(depositAmount).toFixed(2)}</span></p>
                     </div>
                   </div>
-                  <button onClick={closeModal} className="text-slate-500 hover:text-white text-xl leading-none transition-colors">✕</button>
+                  <button onClick={closeModal} className="text-slate-500 hover:text-white leading-none transition-colors"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
                 </div>
 
                 {/* Simulated card visual */}
@@ -738,7 +743,7 @@ export default function CorporateDashboard({ userId }: { userId: number }) {
                 </form>
 
                 <p className="text-center text-[10px] text-slate-600">
-                  🔒 Simulated payment — no real charges are made
+                  <span className="inline-flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg> Simulated payment — no real charges are made</span>
                 </p>
               </div>
             )}

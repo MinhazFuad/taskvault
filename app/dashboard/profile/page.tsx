@@ -303,10 +303,10 @@ async function downloadCV(profile: ProfileData) {
 /* ──────────────────────────────────────────────
    Tier config
 ────────────────────────────────────────────── */
-const TIER_CFG: Record<string, { color: string; bg: string; icon: string }> = {
-  Junior:       { color: 'text-blue-400',    bg: 'bg-blue-500/10 border-blue-500/30',    icon: '🌱' },
-  Intermediate: { color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30', icon: '⚡' },
-  Advanced:     { color: 'text-purple-400',  bg: 'bg-purple-500/10 border-purple-500/30',  icon: '🔥' },
+const TIER_CFG: Record<string, { color: string; bg: string }> = {
+  Junior:       { color: 'text-blue-400',    bg: 'bg-blue-500/10 border-blue-500/30'    },
+  Intermediate: { color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
+  Advanced:     { color: 'text-purple-400',  bg: 'bg-purple-500/10 border-purple-500/30'  },
 };
 
 /* ──────────────────────────────────────────────
@@ -586,7 +586,7 @@ export default function ProfilePage() {
               <div className="flex flex-wrap gap-4 items-center pt-1">
                 {editing ? (
                   <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500 text-sm">📍</span>
+                    <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     <input
                       value={form.location}
                       onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
@@ -597,7 +597,8 @@ export default function ProfilePage() {
                 ) : (
                   profile.Location && (
                     <span className="flex items-center gap-1.5 text-slate-400 text-sm">
-                      <span>📍</span>{profile.Location}
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                      {profile.Location}
                     </span>
                   )
                 )}
@@ -666,7 +667,15 @@ export default function ProfilePage() {
           {/* Tier */}
           <div className={`rounded-xl border ${tier.bg} p-4 flex flex-col gap-1`}>
             <div className="flex items-center gap-2">
-              <span className="text-xl">{tier.icon}</span>
+              <span className={`flex items-center ${tier.color}`}>
+                {profile.Skill_Level === 'Advanced' ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"/></svg>
+                ) : profile.Skill_Level === 'Intermediate' ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                )}
+              </span>
               <span className={`text-xl font-bold ${tier.color}`}>{profile.Skill_Level}</span>
             </div>
             <span className="text-slate-500 text-xs">Skill Tier</span>
@@ -764,7 +773,7 @@ export default function ProfilePage() {
               {/* Course rows */}
               {profile.courses.length === 0 ? (
                 <div className="px-6 py-14 text-center">
-                  <div className="text-3xl mb-3">📚</div>
+                  <div className="flex justify-center mb-3"><svg className="w-10 h-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div>
                   <p className="text-slate-500 text-sm">No completed courses yet.</p>
                   <Link href="/dashboard/courses" className="text-blue-400 text-xs mt-2 inline-block hover:underline">
                     Browse Courses →
@@ -837,7 +846,7 @@ export default function ProfilePage() {
                 return (
                   <div className="flex items-center gap-1.5">
                     <span className="text-yellow-400 text-sm font-bold">{avg}</span>
-                    <span className="text-yellow-400 text-sm">★</span>
+                    <svg className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                     <span className="text-slate-600 text-xs">avg from {profile.reviews.length} {profile.reviews.length === 1 ? 'client' : 'clients'}</span>
                   </div>
                 );
@@ -861,7 +870,7 @@ export default function ProfilePage() {
                         {/* Stars */}
                         <div className="flex gap-0.5 mt-1">
                           {[1, 2, 3, 4, 5].map(s => (
-                            <span key={s} className={`text-sm ${s <= review.Corporate_Rating ? 'text-yellow-400' : 'text-slate-700'}`}>★</span>
+                            <svg key={s} className={`w-3.5 h-3.5 fill-current ${s <= review.Corporate_Rating ? 'text-yellow-400' : 'text-slate-700'}`} viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                           ))}
                         </div>
                       </div>

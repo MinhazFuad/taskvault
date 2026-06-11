@@ -135,7 +135,7 @@ export default function CoursesCatalog() {
             <div className="relative flex-1 min-w-0">
               <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <input type="text" placeholder="Search by title, skill, or keyword…" value={search} onChange={e => setSearch(e.target.value)} className="w-full bg-slate-800/80 border border-slate-700 hover:border-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-all" />
-              {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">✕</button>}
+              {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>}
             </div>
 
             <div className="flex gap-1.5 flex-wrap shrink-0">
@@ -170,7 +170,11 @@ export default function CoursesCatalog() {
           <div className="bg-red-500/10 border border-red-500/40 rounded-2xl p-8 text-red-400 text-center font-semibold">{error}</div>
         ) : visible.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-            <span className="text-5xl">{search ? '🔍' : '🎓'}</span>
+            {search ? (
+              <svg className="w-12 h-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            ) : (
+              <svg className="w-12 h-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
+            )}
             <h2 className="text-lg font-bold text-white">{search ? `No results for "${search}"` : filter === 'completed' ? 'No completed courses yet' : 'No courses here'}</h2>
             <p className="text-slate-500 text-sm max-w-xs">{search ? 'Try a different keyword or clear your search.' : filter === 'completed' ? 'Finish a course to see it here.' : 'Adjust the filter above to see other courses.'}</p>
             <button onClick={clearFilters} className="mt-1 text-blue-400 hover:text-blue-300 text-sm font-bold hover:underline transition-colors">Clear all filters</button>
@@ -199,11 +203,11 @@ export default function CoursesCatalog() {
                           }}
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-900/40 via-slate-900/20 to-purple-900/40 flex items-center justify-center"><span className="text-5xl opacity-60">📚</span></div>
+                        <div className="w-full h-full bg-gradient-to-br from-blue-900/40 via-slate-900/20 to-purple-900/40 flex items-center justify-center"><svg className="w-12 h-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg></div>
                       )}
 
                       <div className="absolute top-3 right-3">
-                        {status === 'completed' && <span className="bg-emerald-500/90 backdrop-blur-sm text-white text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-lg font-black shadow-lg">✓ Done</span>}
+                        {status === 'completed' && <span className="bg-emerald-500/90 backdrop-blur-sm text-white text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-lg font-black shadow-lg flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>Done</span>}
                         {status === 'in-progress' && <span className="bg-blue-500/90 backdrop-blur-sm text-white text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-lg font-black shadow-lg">In Progress</span>}
                       </div>
 

@@ -139,7 +139,8 @@ export default function AdminDashboard() {
               href="/dashboard/admin/applications"
               className="flex items-center gap-2.5 bg-yellow-600 hover:bg-yellow-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-yellow-900/30 transition-all text-sm shrink-0 animate-pulse"
             >
-              🎓 Applications
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
+              Applications
               <span className="bg-yellow-500/60 px-2 py-0.5 rounded-lg text-xs font-bold">{n(a.Pending_Applications)}</span>
             </Link>
           )}

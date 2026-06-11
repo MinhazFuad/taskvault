@@ -215,7 +215,9 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
             onClick={() => { if (validate()) setShowModal(true); }}
             className="bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold px-5 py-2 rounded-xl text-sm transition-all shadow-lg shadow-blue-900/30"
           >
-            {mode === 'create' ? '🚀 Publish' : '💾 Save Changes'}
+            {mode === 'create'
+              ? <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Publish</>
+              : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg> Save Changes</>}
           </button>
         </div>
       </div>
@@ -236,7 +238,7 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
             }`}
           >
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 ${isOverview ? 'bg-blue-500/20' : 'bg-slate-700/60'}`}>📋</div>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isOverview ? 'bg-blue-500/20' : 'bg-slate-700/60'}`}><svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
               <div className="min-w-0">
                 <p className="text-sm font-bold truncate">Course Overview</p>
                 <p className="text-[10px] text-slate-500 mt-0.5 truncate">Title · Description · Cover</p>
@@ -285,8 +287,8 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
                       {hasErr && <span className="text-red-400 text-[10px] shrink-0">!</span>}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 ml-7">
-                      {m.videoUrl && <span className="text-[9px] text-slate-600">🎬 video</span>}
-                      {m.quiz && <span className="text-[9px] text-purple-500">🧠 quiz</span>}
+                      {m.videoUrl && <span className="flex items-center gap-0.5 text-[9px] text-slate-600"><svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> video</span>}
+                      {m.quiz && <span className="flex items-center gap-0.5 text-[9px] text-purple-500"><svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> quiz</span>}
                     </div>
                   </button>
 
@@ -297,7 +299,7 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
                       className="w-5 h-5 flex items-center justify-center rounded text-slate-600 hover:text-white hover:bg-slate-700 disabled:opacity-20 transition-all text-[10px]">↓</button>
                     {modules.length > 1 && (
                       <button onClick={e => { e.stopPropagation(); removeModule(i); }}
-                        className="w-5 h-5 flex items-center justify-center rounded text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all text-[10px]">✕</button>
+                        className="w-5 h-5 flex items-center justify-center rounded text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg></button>
                     )}
                   </div>
                 </div>
@@ -338,7 +340,7 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
           {errors._ && (
             <div className="mx-8 mt-6 bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center justify-between gap-3">
               <p className="text-red-400 text-sm">{errors._}</p>
-              <button onClick={() => clearErr('_')} className="text-red-500 hover:text-red-300 shrink-0">✕</button>
+              <button onClick={() => clearErr('_')} className="text-red-500 hover:text-red-300 shrink-0"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
           )}
 
@@ -353,7 +355,7 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
               {/* Cover image */}
               <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-700/60 flex items-center gap-3">
-                  <span className="text-lg">🖼️</span>
+                  <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                   <div>
                     <h3 className="font-bold text-white text-sm">Cover Image</h3>
                     <p className="text-slate-500 text-[11px] mt-0.5">Paste any public image URL — then adjust framing</p>
@@ -405,7 +407,7 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
               <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-700/60 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg">📝</span>
+                    <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     <h3 className="font-bold text-white text-sm">Course Description</h3>
                   </div>
                   <span className="text-[10px] text-slate-600 font-mono">{course.description.length} chars</span>
@@ -423,7 +425,7 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
               {/* Reward config */}
               <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-700/60 flex items-center gap-3">
-                  <span className="text-lg">🎯</span>
+                  <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                   <div>
                     <h3 className="font-bold text-white text-sm">Completion Rewards</h3>
                     <p className="text-slate-500 text-[11px] mt-0.5">What students earn for finishing this course</p>
@@ -457,7 +459,7 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
                       <span className="text-xs text-slate-500">On completion, student earns:</span>
                       <span className="bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold px-2.5 py-1 rounded-lg capitalize">{course.rewardSkill} skill</span>
                       <span className="text-slate-600">+</span>
-                      <span className="bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold px-2.5 py-1 rounded-lg">⚡ {course.rewardRp} RP</span>
+                      <span className="flex items-center gap-1 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold px-2.5 py-1 rounded-lg"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>{course.rewardRp} RP</span>
                     </div>
                   )}
                 </div>
@@ -491,7 +493,7 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
                     className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-500 hover:text-white disabled:opacity-20 transition-all text-sm">↓</button>
                   {modules.length > 1 && (
                     <button onClick={() => removeModule(activeIdx)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-all text-sm">✕</button>
+                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg></button>
                   )}
                 </div>
               </div>
@@ -499,7 +501,7 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
               {/* Title */}
               <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-700/60 flex items-center gap-3">
-                  <span className="text-lg">🏷️</span>
+                  <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                   <h3 className="font-bold text-white text-sm">Module Title</h3>
                 </div>
                 <div className="p-6">
@@ -515,7 +517,7 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
               <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-700/60 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg">🎬</span>
+                    <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                     <div>
                       <h3 className="font-bold text-white text-sm">Video</h3>
                       <p className="text-slate-500 text-[11px] mt-0.5">YouTube links show a live thumbnail preview</p>
@@ -549,7 +551,7 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
               {/* Content */}
               <div className={`bg-slate-800/50 border rounded-2xl overflow-hidden ${errors[`m${activeIdx}c`] ? 'border-red-500/60' : 'border-slate-700'}`}>
                 <div className="px-6 py-4 border-b border-slate-700/60 flex items-center gap-3">
-                  <span className="text-lg">📄</span>
+                  <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                   <div>
                     <h3 className="font-bold text-white text-sm">Learning Content</h3>
                     <p className="text-slate-500 text-[11px] mt-0.5">Rich text editor · Type <kbd className="bg-slate-700 border border-slate-600 px-1 rounded text-[9px] font-mono">/</kbd> for commands</p>
@@ -571,7 +573,7 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
               <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-700/60 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg">🧠</span>
+                    <svg className="w-5 h-5 text-purple-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                     <div>
                       <h3 className="font-bold text-white text-sm">Module Quiz</h3>
                       <p className="text-slate-500 text-[11px] mt-0.5">One MCQ question students answer after the lesson</p>
@@ -625,7 +627,7 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
                               }`}
                               title="Mark as correct answer"
                             >
-                              {isCorrect && <span className="text-white text-[9px] font-black">✓</span>}
+                              {isCorrect && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>}
                             </button>
                             <span className={`text-xs font-black w-5 shrink-0 ${isCorrect ? 'text-emerald-400' : 'text-slate-500'}`}>{letter}</span>
                             <input
@@ -681,8 +683,10 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8 max-w-sm w-full shadow-2xl space-y-6">
             <div>
-              <h2 className="text-xl font-extrabold">
-                {mode === 'create' ? '🚀 Publish course?' : '💾 Save changes?'}
+              <h2 className="text-xl font-extrabold flex items-center gap-2">
+                {mode === 'create'
+                  ? <><svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Publish course?</>
+                  : <><svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg> Save changes?</>}
               </h2>
               <p className="text-slate-400 text-sm mt-1.5 leading-relaxed">
                 {mode === 'create'
@@ -713,7 +717,9 @@ export default function CourseBuilder({ mode, userId, courseId, initialCourse, i
                 className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                 {saving
                   ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</>
-                  : mode === 'create' ? '🚀 Publish' : '💾 Save'}
+                  : mode === 'create'
+                    ? <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Publish</>
+                    : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg> Save</>}
               </button>
             </div>
           </div>

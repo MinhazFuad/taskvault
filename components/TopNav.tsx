@@ -1,16 +1,28 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-const NOTIF_ICONS: Record<string, string> = {
-  new_application:     '📥',
-  application_accepted:'✅',
-  application_rejected:'❌',
-  submission_received: '📨',
-  payment_released:    '💰',
-  bounty_expiring:     '⏰',
+const NOTIF_ICONS: Record<string, React.ReactNode> = {
+  new_application: (
+    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+  ),
+  application_accepted: (
+    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+  ),
+  application_rejected: (
+    <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+  ),
+  submission_received: (
+    <svg className="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+  ),
+  payment_released: (
+    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+  ),
+  bounty_expiring: (
+    <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+  ),
 };
 
 function timeAgo(dateStr: string): string {
@@ -186,7 +198,12 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
           
           <div className="flex items-center gap-3">
             <span className={`px-3 py-1 rounded-full text-xs font-semibold border hidden sm:block ${role === 'Admin' ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>
-              {role === 'Admin' ? '⚡ Admin' : `${role} View`}
+              {role === 'Admin' ? (
+                <span className="flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                  Admin
+                </span>
+              ) : `${role} View`}
             </span>
 
             {/* NOTIFICATION BELL */}
@@ -226,7 +243,11 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
                           onClick={() => handleNotifClick(n)}
                           className={`w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-slate-700/50 transition-colors ${!n.Is_Read ? 'bg-blue-500/5' : ''}`}
                         >
-                          <span className="text-base shrink-0 mt-0.5">{NOTIF_ICONS[n.Type] || '🔔'}</span>
+                          <span className="shrink-0 mt-0.5 flex items-center">
+                            {NOTIF_ICONS[n.Type] || (
+                              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                            )}
+                          </span>
                           <div className="flex-1 min-w-0">
                             <p className={`text-xs font-semibold leading-snug ${!n.Is_Read ? 'text-white' : 'text-slate-300'}`}>
                               {n.Title}
@@ -277,7 +298,8 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
                       className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
                       onClick={() => setDropdownOpen(false)}
                     >
-                      <span>👤</span> My Profile
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      My Profile
                     </Link>
                   )}
 
@@ -287,7 +309,8 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
                       className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors"
                       onClick={() => setDropdownOpen(false)}
                     >
-                      <span>⚡</span> User Management
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      User Management
                     </Link>
                   )}
                   
@@ -295,7 +318,8 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
                     onClick={handleLogout}
                     className="flex items-center gap-2 w-full text-left px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors"
                   >
-                    <span>🚪</span> Sign Out
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                      Sign Out
                   </button>
                 </div>
               )}
