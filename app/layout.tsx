@@ -15,8 +15,21 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Genesis Design System",
-  description: "An editorial precision interface for a community platform",
+  title: "TaskVault | Student Freelance & Bounty Platform",
+  description: "Complete verified learning modules, build an immutable reputation, and execute real-world corporate bounties.",
+  openGraph: {
+    title: "TaskVault | Student Freelance & Bounty Platform",
+    description: "Complete verified learning modules, build an immutable reputation, and execute real-world corporate bounties.",
+    url: "https://taskvault-learn.vercel.app",
+    siteName: "TaskVault",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TaskVault | Student Freelance & Bounty Platform",
+    description: "Complete verified learning modules, build an immutable reputation, and execute real-world corporate bounties.",
+  },
 };
 
 export default function RootLayout({
