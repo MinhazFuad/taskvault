@@ -335,7 +335,8 @@ export default function RichEditor({
   useEffect(() => {
     if (!editor || content === prevContent.current) return;
     prevContent.current = content;
-    editor.commands.setContent(parseInitialContent(content) ?? '', false);
+    // FIX: SetContentOptions object applied instead of false
+    editor.commands.setContent(parseInitialContent(content) ?? '', { emitUpdate: false });
   }, [content, editor]);
 
   const slashItems = slashState ? filterCmds(slashState.query) : [];
