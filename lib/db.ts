@@ -1,5 +1,4 @@
 import mysql from 'mysql2/promise';
-import { attachDatabasePool } from '@vercel/functions';
 
 const globalForMysql = global as unknown as { mysqlPool: mysql.Pool };
 
@@ -19,7 +18,5 @@ const pool = globalForMysql.mysqlPool || mysql.createPool({
 if (process.env.NODE_ENV !== 'production') {
   globalForMysql.mysqlPool = pool;
 }
-
-attachDatabasePool(pool);
 
 export default pool;
