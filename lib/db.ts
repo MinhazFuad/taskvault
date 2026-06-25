@@ -1,15 +1,25 @@
 import mysql from 'mysql2/promise';
+import { attachDatabasePool } from '@vercel/functions';
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'taskvault_db',
+const globalForMysql = global as unknown as { mysqlPool: mysql.Pool };
+
+const pool = globalForMysql.mysqlPool || mysql.createPool({
+  uri: process.env.DATABASE_URL,
   waitForConnections: true,
-  connectionLimit: 5, // Kept low for serverless compatibility later
+  connectionLimit: 5,
   queueLimit: 0,
   enableKeepAlive: true,
-  keepAliveInitialDelay: 0
+  keepAliveInitialDelay: 0,
+  ssl: {
+    minVersion: 'TLSv1.2',
+    rejectUnauthorized: true
+  }
 });
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForMysql.mysqlPool = pool;
+}
+
+attachDatabasePool(pool);
 
 export default pool;
