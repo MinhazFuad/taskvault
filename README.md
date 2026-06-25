@@ -1,4 +1,3 @@
-```markdown
 # TaskVault
 
 **Live Demo:** [taskvault-learn.vercel.app](https://taskvault-learn.vercel.app)
