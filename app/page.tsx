@@ -3,8 +3,8 @@ import Link from 'next/link';
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-blue-500/30 font-sans flex flex-col">
-      {/* Navigation */}
-      <nav className="fixed w-full top-0 z-50 bg-slate-950/80 backdrop-blur-lg border-b border-white/5">
+      {/* Navigation - ADDED transform-gpu to force hardware acceleration on the backdrop blur */}
+      <nav className="fixed w-full top-0 z-50 bg-slate-950/80 backdrop-blur-lg border-b border-white/5 transform-gpu">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="text-2xl font-bold tracking-tight">
             Task<span className="text-blue-500">Vault</span>
@@ -23,8 +23,8 @@ export default function LandingPage() {
       <main className="flex-1 pt-16">
         {/* Hero Section */}
         <section className="relative pt-32 pb-24 px-6 overflow-hidden">
-          {/* Background Glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none"></div>
+          {/* Background Glow - ADDED transform-gpu to offload the massive 120px blur recalculation to the graphics card */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none transform-gpu"></div>
           
           <div className="max-w-4xl mx-auto text-center relative z-10">
             <div className="inline-block mb-6 px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400 text-sm font-semibold tracking-wide">

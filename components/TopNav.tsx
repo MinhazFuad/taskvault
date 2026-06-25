@@ -38,6 +38,7 @@ function timeAgo(dateStr: string): string {
 export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Instructor' | 'Admin' }) {
   const router = useRouter();
   const [dropdownOpen,  setDropdownOpen]  = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userProfile,   setUserProfile]   = useState<any>(null);
   const [userId,        setUserId]        = useState<number | null>(null);
   const [notifOpen,     setNotifOpen]     = useState(false);
@@ -223,7 +224,7 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 mt-3 w-80 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+                <div className="absolute right-0 mt-3 w-80 max-w-[90vw] bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/60 bg-slate-800/80">
                     <p className="text-sm font-bold text-white">Notifications</p>
                     {unreadCount > 0 && (
@@ -325,9 +326,84 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
               )}
             </div>
 
+            {/* MOBILE HAMBURGER MENU BUTTON */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden ml-1 p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus:outline-none"
+            >
+              <span className="sr-only">Open main menu</span>
+              {mobileMenuOpen ? (
+                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+              )}
+            </button>
+
           </div>
         </div>
       </div>
+
+      {/* MOBILE MENU DROPDOWN */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-slate-900 border-t border-slate-800 shadow-xl animate-in slide-in-from-top-2 fade-in duration-200">
+          <div className="px-4 pt-3 pb-4 flex flex-col space-y-2">
+            <Link 
+              href="/dashboard" 
+              onClick={() => setMobileMenuOpen(false)} 
+              className="text-slate-300 hover:text-white hover:bg-slate-800 block px-3 py-2.5 rounded-md text-base font-medium transition-colors"
+            >
+              Dashboard
+            </Link>
+            
+            {role === 'Student' && (
+              <>
+                <Link href="/dashboard/courses" onClick={() => setMobileMenuOpen(false)} className="text-slate-300 hover:text-white hover:bg-slate-800 block px-3 py-2.5 rounded-md text-base font-medium transition-colors">LMS Courses</Link>
+                <Link href="/dashboard/bounties" onClick={() => setMobileMenuOpen(false)} className="text-slate-300 hover:text-white hover:bg-slate-800 block px-3 py-2.5 rounded-md text-base font-medium transition-colors">Bounty Board</Link>
+                <Link href="/dashboard/leaderboards" onClick={() => setMobileMenuOpen(false)} className="text-slate-300 hover:text-white hover:bg-slate-800 block px-3 py-2.5 rounded-md text-base font-medium transition-colors">Leaderboards</Link>
+                <Link href="/dashboard/messages" onClick={() => setMobileMenuOpen(false)} className="text-slate-300 hover:text-white hover:bg-slate-800 flex items-center justify-between px-3 py-2.5 rounded-md text-base font-medium transition-colors">
+                  Messages
+                  {msgUnread > 0 && (
+                    <span className="px-2 py-0.5 bg-blue-500 text-white text-[11px] font-black rounded-full flex items-center justify-center">
+                      {msgUnread > 9 ? '9+' : msgUnread}
+                    </span>
+                  )}
+                </Link>
+              </>
+            )}
+
+            {role === 'Corporate' && (
+              <>
+                <Link href="/dashboard/manage-bounties" onClick={() => setMobileMenuOpen(false)} className="text-slate-300 hover:text-white hover:bg-slate-800 block px-3 py-2.5 rounded-md text-base font-medium transition-colors">Post Bounty</Link>
+                <Link href="/dashboard/bounty-history" onClick={() => setMobileMenuOpen(false)} className="text-slate-300 hover:text-white hover:bg-slate-800 block px-3 py-2.5 rounded-md text-base font-medium transition-colors">Bounty History</Link>
+                <Link href="/dashboard/submissions" onClick={() => setMobileMenuOpen(false)} className="text-slate-300 hover:text-white hover:bg-slate-800 block px-3 py-2.5 rounded-md text-base font-medium transition-colors">Review Studio</Link>
+                <Link href="/dashboard/messages" onClick={() => setMobileMenuOpen(false)} className="text-slate-300 hover:text-white hover:bg-slate-800 flex items-center justify-between px-3 py-2.5 rounded-md text-base font-medium transition-colors">
+                  Messages
+                  {msgUnread > 0 && (
+                    <span className="px-2 py-0.5 bg-blue-500 text-white text-[11px] font-black rounded-full flex items-center justify-center">
+                      {msgUnread > 9 ? '9+' : msgUnread}
+                    </span>
+                  )}
+                </Link>
+              </>
+            )}
+
+            {role === 'Instructor' && (
+              <Link href="/dashboard/create-course" onClick={() => setMobileMenuOpen(false)} className="text-slate-300 hover:text-white hover:bg-slate-800 block px-3 py-2.5 rounded-md text-base font-medium transition-colors">Course Builder</Link>
+            )}
+
+            {role === 'Admin' && (
+              <>
+                <Link href="/dashboard/admin/users" onClick={() => setMobileMenuOpen(false)} className="text-slate-300 hover:text-white hover:bg-slate-800 block px-3 py-2.5 rounded-md text-base font-medium transition-colors">Manage Users</Link>
+                <Link href="/dashboard/admin/applications" onClick={() => setMobileMenuOpen(false)} className="text-slate-300 hover:text-white hover:bg-slate-800 block px-3 py-2.5 rounded-md text-base font-medium transition-colors">Applications</Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
