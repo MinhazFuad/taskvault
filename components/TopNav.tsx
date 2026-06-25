@@ -223,8 +223,9 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
                 )}
               </button>
 
+              {/* FIX: -right-20 forces mobile centering, sm:right-0 restores desktop. w-[85vw] dynamically scales on mobile */}
               {notifOpen && (
-                <div className="absolute right-0 mt-3 w-80 max-w-[90vw] bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+                <div className="absolute -right-20 sm:right-0 mt-3 w-[85vw] sm:w-80 max-w-[360px] bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/60 bg-slate-800/80">
                     <p className="text-sm font-bold text-white">Notifications</p>
                     {unreadCount > 0 && (
@@ -280,9 +281,9 @@ export default function TopNav({ role }: { role: 'Student' | 'Corporate' | 'Inst
                 )}
               </button>
 
-              {/* DROPDOWN MENU */}
+              {/* FIX: added -right-2 for extremely narrow phones */}
               {dropdownOpen && (
-                <div className="absolute right-0 mt-3 w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-2 z-50 overflow-hidden origin-top-right animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute -right-2 sm:right-0 mt-3 w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-2 z-50 overflow-hidden origin-top-right animate-in fade-in slide-in-from-top-2 duration-200">
                   
                   {/* User Identifier Header */}
                   {userProfile?.Full_Name && (
