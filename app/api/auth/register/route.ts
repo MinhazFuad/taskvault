@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import bcrypt from 'bcrypt';
+import { ResultSetHeader } from 'mysql2';
 
 export async function POST(request: Request) {
   const connection = await pool.getConnection();
@@ -22,12 +23,34 @@ export async function POST(request: Request) {
 
     await connection.beginTransaction();
 
-    await connection.execute(
-      `INSERT INTO Users (Full_Name, Email, Password_Hash, Role) VALUES (?, ?, ?, ?)`,
+    // 1. Insert the User and extract the auto-generated User_ID
+    const [userResult] = await connection.execute<ResultSetHeader>(
+      `INSERT INTO users (Full_Name, Email, Password_Hash, Role) VALUES (?, ?, ?, ?)`,
       [fullName, email, passwordHash, role]
     );
     
-    // trg_init_new_user trigger auto-provisions wallet, student_metrics, and corporate_organizations
+    const userId = userResult.insertId;
+
+    // 2. Initialize the Wallet for all new users
+    await connection.execute(
+      `INSERT INTO user_wallets (User_ID, Available_Credits, Escrow_Balance) VALUES (?, 0.00, 0.00)`,
+      [userId]
+    );
+
+    // 3. Provision Role-Specific Tables based on the selected role
+    if (role === 'Student') {
+      await connection.execute(
+        `INSERT INTO student_metrics (Student_ID) VALUES (?)`,
+        [userId]
+      );
+    } else if (role === 'Corporate') {
+      const companyName = `${fullName} Inc.`;
+      await connection.execute(
+        `INSERT INTO corporate_organizations (User_ID, Company_Name) VALUES (?, ?)`,
+        [userId, companyName]
+      );
+    }
+
     await connection.commit();
     return NextResponse.json({ message: 'User registered successfully', success: true }, { status: 201 });
 
